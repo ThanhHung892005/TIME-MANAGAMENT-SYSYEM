@@ -1,0 +1,100 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String            @id @default(cuid())
+  email     String            @unique
+  password  String?
+  googleId  String?           @unique
+  name      String
+  avatar    String?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  tasks     Task[]
+  sessions  PomodoroSession[]
+}
+
+model Task {
+  id          String            @id @default(cuid())
+  title       String
+  description String?
+  priority    Priority          @default(MEDIUM)
+  status      Status            @default(TODO)
+  deadline    DateTime?
+  order       Int               @default(0)
+  userId      String
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subtasks    Subtask[]
+  tags        TagsOnTasks[]
+  sessions    PomodoroSession[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([deadline])
+}
+
+model Subtask {
+  id        String   @id @default(cuid())
+  title     String
+  completed Boolean  @default(false)
+  order     Int      @default(0)
+  taskId    String
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([taskId])
+}
+
+model Tag {
+  id    String        @id @default(cuid())
+  name  String
+  color String        @default("#3B82F6")
+  tasks TagsOnTasks[]
+}
+
+model TagsOnTasks {
+  taskId String
+  tagId  String
+  task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
+}
+
+model PomodoroSession {
+  id        String    @id @default(cuid())
+  duration  Int
+  type      String
+  taskId    String?
+  task      Task?     @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+  @@index([userId])
+  @@index([startedAt])
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum Status {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  ARCHIVED
+}
