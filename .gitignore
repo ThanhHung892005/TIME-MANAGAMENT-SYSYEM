@@ -29,6 +29,10 @@ build/
 
 # Cho phép file template (không chứa giá trị thật)
 !.env.example
+!.env.docker.example
+
+# Docker env thật (chứa credentials)
+.env.docker
 
 # =============================================================================
 # Logs
