@@ -9,33 +9,39 @@ datasource db {
 }
 
 model User {
-  id        String            @id @default(cuid())
-  email     String            @unique
-  password  String?
-  googleId  String?           @unique
-  name      String
-  avatar    String?
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  tasks     Task[]
-  sessions  PomodoroSession[]
+  id             String            @id @default(cuid())
+  email          String            @unique
+  password       String?
+  googleId       String?           @unique
+  name           String
+  avatar         String?
+  theme          String?           @default("light")
+  timezone       String?           @default("UTC")
+  pomodoroDuration Int?            @default(25)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  tasks          Task[]
+  sessions       PomodoroSession[]
+  tags           Tag[]
 }
 
 model Task {
-  id          String            @id @default(cuid())
-  title       String
-  description String?
-  priority    Priority          @default(MEDIUM)
-  status      Status            @default(TODO)
-  deadline    DateTime?
-  order       Int               @default(0)
-  userId      String
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  subtasks    Subtask[]
-  tags        TagsOnTasks[]
-  sessions    PomodoroSession[]
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
+  id            String            @id @default(cuid())
+  title         String
+  description   String?
+  priority      Priority          @default(MEDIUM)
+  status        Status            @default(TODO)
+  deadline      DateTime?
+  isRecurring   Boolean           @default(false)
+  recurringType String?
+  order         Int               @default(0)
+  userId        String
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subtasks      Subtask[]
+  tags          TagsOnTasks[]
+  sessions      PomodoroSession[]
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@index([userId])
   @@index([status])
@@ -56,10 +62,14 @@ model Subtask {
 }
 
 model Tag {
-  id    String        @id @default(cuid())
-  name  String
-  color String        @default("#3B82F6")
-  tasks TagsOnTasks[]
+  id     String        @id @default(cuid())
+  name   String
+  color  String        @default("#3B82F6")
+  userId String
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tasks  TagsOnTasks[]
+
+  @@index([userId])
 }
 
 model TagsOnTasks {
