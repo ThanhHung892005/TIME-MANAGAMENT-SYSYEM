@@ -33,7 +33,8 @@ model Task {
   status        Status            @default(TODO)
   deadline      DateTime?
   isRecurring   Boolean           @default(false)
-  recurringType String?
+  recurringType RecurringType?
+  nextDueAt     DateTime?
   order         Int               @default(0)
   userId        String
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -47,6 +48,7 @@ model Task {
   @@index([status])
   @@index([priority])
   @@index([deadline])
+  @@index([nextDueAt])
 }
 
 model Subtask {
@@ -107,4 +109,11 @@ enum Status {
   IN_PROGRESS
   COMPLETED
   ARCHIVED
+  OVERDUE
+}
+
+enum RecurringType {
+  DAILY
+  WEEKLY
+  MONTHLY
 }

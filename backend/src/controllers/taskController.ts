@@ -1,7 +1,13 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { Priority, Status } from '@prisma/client';
-import { taskService, createTaskSchema, updateTaskSchema, createSubtaskSchema } from '../services/taskService';
+import {
+  taskService,
+  createTaskSchema,
+  updateTaskSchema,
+  createSubtaskSchema,
+  bulkActionSchema,
+} from '../services/taskService';
 import type { AuthRequest } from '../types';
 
 export async function getTasks(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -14,6 +20,24 @@ export async function getTasks(req: AuthRequest, res: Response, next: NextFuncti
       deadlineBefore: req.query['deadlineBefore'] as string | undefined,
       sort: req.query['sort'] as string | undefined,
     });
+    res.json(tasks);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getToday(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const tasks = await taskService.getToday(req.user!.userId);
+    res.json(tasks);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getUpcoming(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const tasks = await taskService.getUpcoming(req.user!.userId);
     res.json(tasks);
   } catch (err) {
     next(err);
@@ -53,6 +77,16 @@ export async function deleteTask(req: AuthRequest, res: Response, next: NextFunc
   try {
     await taskService.delete(req.params['id'] as string, req.user!.userId);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function bulkAction(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const data = bulkActionSchema.parse(req.body);
+    const result = await taskService.bulkAction(req.user!.userId, data);
+    res.json(result);
   } catch (err) {
     next(err);
   }
