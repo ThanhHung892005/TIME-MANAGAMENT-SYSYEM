@@ -1,9 +1,9 @@
 import { Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
-import { generateReport } from '../services/reportService';
+
 import type { AuthRequest } from '../types';
 import { startOfDay, endOfDay, startOfWeek, subWeeks, eachDayOfInterval, subDays } from 'date-fns';
-
+import { generateReport, exportTags as exportTagsReport, exportPomodoro as exportPomodoroReport } from '../services/reportService';
 export async function getSummary(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
     const userId = req.user!.userId;
@@ -97,6 +97,78 @@ export async function exportReport(req: AuthRequest, res: Response, next: NextFu
   try {
     const format = (req.query['format'] as string) ?? 'csv';
     const result = await generateReport(req.user!.userId, format);
+    res.setHeader('Content-Type', result.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.content);
+  } catch (err) {
+    next(err);
+  }
+
+}
+export async function getOverdueStats(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const now = new Date();
+
+    const [overdueCount, dueSoonCount] = await Promise.all([
+      prisma.task.count({
+        where: {
+          userId,
+          status: { notIn: ['COMPLETED', 'ARCHIVED'] },
+          deadline: { lt: now },
+        },
+      }),
+      prisma.task.count({
+        where: {
+          userId,
+          status: { notIn: ['COMPLETED', 'ARCHIVED'] },
+          deadline: { gte: now, lte: new Date(now.getTime() + 24 * 60 * 60 * 1000) },
+        },
+      }),
+    ]);
+
+    res.json({ overdueCount, dueSoonCount });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getPriorityStats(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+
+    const [low, medium, high] = await Promise.all([
+      prisma.task.count({ where: { userId, priority: 'LOW', status: { notIn: ['ARCHIVED'] } } }),
+      prisma.task.count({ where: { userId, priority: 'MEDIUM', status: { notIn: ['ARCHIVED'] } } }),
+      prisma.task.count({ where: { userId, priority: 'HIGH', status: { notIn: ['ARCHIVED'] } } }),
+    ]);
+
+    res.json([
+      { priority: 'Low', count: low, fill: '#22C55E' },
+      { priority: 'Medium', count: medium, fill: '#F59E0B' },
+      { priority: 'High', count: high, fill: '#EF4444' },
+    ]);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportTags(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const format = (req.query['format'] as 'csv' | 'json') ?? 'csv';
+    const result = await exportTagsReport(req.user!.userId, format);
+    res.setHeader('Content-Type', result.contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    res.send(result.content);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function exportPomodoro(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const format = (req.query['format'] as 'csv' | 'json') ?? 'csv';
+    const result = await exportPomodoroReport(req.user!.userId, format);
     res.setHeader('Content-Type', result.contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
     res.send(result.content);

@@ -27,10 +27,15 @@
     "express-session": "^1.19.0",
     "jsonwebtoken": "^9.0.3",
     "node-cron": "^4.2.1",
+<<<<<<< Updated upstream
+=======
+    "nodemailer": "^8.0.8",
+>>>>>>> Stashed changes
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "pdfkit": "^0.18.0",
     "winston": "^3.19.0",
+    "xlsx": "^0.18.5",
     "zod": "^4.4.1"
   },
   "devDependencies": {
@@ -42,6 +47,10 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.6.0",
     "@types/node-cron": "^3.0.11",
+<<<<<<< Updated upstream
+=======
+    "@types/nodemailer": "^8.0.0",
+>>>>>>> Stashed changes
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/pdfkit": "^0.17.6",
