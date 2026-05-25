@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { prisma } from '../config/database';
 import { signToken } from '../utils/jwt';
 import { AppError } from '../types';
+import crypto from 'crypto';
+import { sendPasswordResetEmail } from './emailService';
 
 export const registerSchema = z.object({
   email: z.string().email('Invalid email format'),
@@ -68,6 +70,63 @@ class AuthService {
       data,
       select: { id: true, email: true, name: true, avatar: true, createdAt: true },
     });
+  }
+
+  async forgotPassword(email: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    if(!user) return { message: 'If email exists, a reset link has been sent.'};
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: new Date(Date.now() + 3600000)// 1 hour
+      }
+    });
+    await sendPasswordResetEmail(email, resetToken);
+    return { message: 'If email exists, a reset link has been sent.'}
+  }
+
+  async resetPassword(token: string, newPassword: string) {
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await prisma.user.findFirst({
+      where: {
+        resetPasswordToken: hashedToken,
+        resetPasswordExpires: { gt: new Date() }
+      }
+    });
+    if(!user) throw new AppError('Invalid or expired token', 400);
+    const newHashedPassword = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: newHashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null
+      }
+    });
+
+    return { message: 'Password has been reset successfully' };
+  }
+
+  async changePassword(userId: string, oldPass: string, newPass: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !user.password) throw new AppError('User not found or uses Google Sign-In', 404);
+
+    const isValid = await bcrypt.compare(oldPass, user.password);
+    if (!isValid) throw new AppError('Old password is incorrect', 400);
+
+    const hashed = await bcrypt.hash(newPass, 12);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { password: hashed },
+    });
+
+    return { message: 'Password changed successfully' };
   }
 
   async loginOrCreateWithGoogle(profile: {

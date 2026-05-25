@@ -21,13 +21,14 @@ export async function getSummary(req: AuthRequest, res: Response, next: NextFunc
         select: { id: true, title: true, deadline: true, priority: true },
       }),
       prisma.pomodoroSession.count({ where: { userId, type: 'work', endedAt: { not: null } } }),
+      prisma.task.count({ where: { userId, status: 'OVERDUE' } }),
     ]);
 
     const completionRate = totalTasks > 0
       ? Math.round((await prisma.task.count({ where: { userId, status: 'COMPLETED' } }) / totalTasks) * 100)
       : 0;
 
-    res.json({ completedToday, totalTasks, upcomingDeadlines, totalSessions, completionRate });
+    res.json({ completedToday, totalTasks, upcomingDeadlines, totalSessions, completionRate});
   } catch (err) {
     next(err);
   }

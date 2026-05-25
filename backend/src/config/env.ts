@@ -11,6 +11,8 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   SESSION_SECRET: z.string().default('session-dev-secret-change-in-prod'),
+  EMAIL_USER: z.string().optional(),
+  EMAIL_PASS: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
