@@ -17,28 +17,46 @@ abstract class ReportExporter {
 }
 
 class CSVReportExporter extends ReportExporter {
+
   protected async collectData(userId: string) {
-    return prisma.task.findMany({
+    return prisma.pomodoroSession.findMany({
       where: { userId },
-      include: { subtasks: true },
-      orderBy: { createdAt: 'desc' },
+      include: { task: { select: { title: true } } },
+      orderBy: { startedAt: 'desc' },
     });
   }
 
+
   protected formatData(data: unknown) {
-    const tasks = data as Array<{ title: string; priority: string; status: string; deadline: Date | null; createdAt: Date }>;
-    const header = 'Title,Priority,Status,Deadline,Created At';
-    const rows = tasks.map((t) =>
-      `"${t.title}",${t.priority},${t.status},${t.deadline?.toISOString() ?? ''},${t.createdAt.toISOString()}`,
-    );
+    type SessionRow = {
+      type: string;
+      duration: number;
+      startedAt: Date | string;
+      endedAt: Date | string | null;
+      task: { title: string } | null;
+    };
+    const sessions = data as SessionRow[];
+
+
+    const header = 'Type;Duration (min);Task;Started At;Ended At';
+
+    const rows = sessions.map(s => {
+      const startStr = s.startedAt ? new Date(s.startedAt).toISOString() : '';
+      const endStr = s.endedAt ? new Date(s.endedAt).toISOString() : '';
+      const durationMin = s.duration ? Math.floor(s.duration / 60) : 0;
+
+
+      return `${s.type ?? ''};${durationMin};"${s.task?.title ?? '—'}";${startStr};${endStr}`;
+    });
+
     return [header, ...rows].join('\n');
   }
 
   protected async generateFile(data: unknown): Promise<ReportResult> {
     return {
-      content: data as string,
-      filename: `tasks-${Date.now()}.csv`,
-      contentType: 'text/csv',
+      content: '\uFEFF' + (data as string),
+      filename: `pomodoro-${Date.now()}.csv`,
+      contentType: 'text/csv; charset=utf-8',
     };
   }
 }
@@ -138,5 +156,134 @@ const exporters: Record<string, ReportExporter> = {
 
 export async function generateReport(userId: string, format: string) {
   const exporter = exporters[format] ?? exporters['json']!;
+  return exporter.exportReport(userId);
+}
+class TagsCSVExporter extends ReportExporter {
+  protected async collectData(userId: string) {
+    return prisma.tag.findMany({
+      where: { userId },
+      include: {
+        tasks: {
+          include: { task: { select: { title: true, status: true, priority: true } } }
+        }
+      },
+    });
+  }
+
+  protected formatData(data: unknown) {
+    type TagRow = {
+      name: string;
+      color: string;
+      tasks: { task: { title: string; status: string; priority: string } }[];
+    };
+    const tags = data as TagRow[];
+    const header = 'Tag Name,Color,Task Title,Task Status,Task Priority';
+    const rows = tags.flatMap(tag =>
+      tag.tasks.length > 0
+        ? tag.tasks.map(t =>
+          `"${tag.name}","${tag.color}","${t.task.title}",${t.task.status},${t.task.priority}`
+        )
+        : [`"${tag.name}","${tag.color}",(no tasks),,`]
+    );
+    return [header, ...rows].join('\n');
+  }
+
+  protected async generateFile(data: unknown): Promise<ReportResult> {
+    return {
+      content: data as string,
+      filename: `tags-${Date.now()}.csv`,
+      contentType: 'text/csv',
+    };
+  }
+}
+
+class TagsJSONExporter extends ReportExporter {
+  protected async collectData(userId: string) {
+    return prisma.tag.findMany({
+      where: { userId },
+      include: {
+        tasks: {
+          include: { task: { select: { title: true, status: true, priority: true, deadline: true } } }
+        }
+      },
+    });
+  }
+
+  protected formatData(data: unknown) {
+    return JSON.stringify(data, null, 2);
+  }
+
+  protected async generateFile(data: unknown): Promise<ReportResult> {
+    return {
+      content: data as string,
+      filename: `tags-${Date.now()}.json`,
+      contentType: 'application/json',
+    };
+  }
+}
+
+class PomodoroCSVExporter extends ReportExporter {
+  protected async collectData(userId: string) {
+    return prisma.pomodoroSession.findMany({
+      where: { userId },
+      include: { task: { select: { title: true } } },
+      orderBy: { startedAt: 'desc' },
+    });
+  }
+
+  protected formatData(data: unknown) {
+    type SessionRow = {
+      type: string;
+      duration: number;
+      startedAt: Date;
+      endedAt: Date | null;
+      task: { title: string } | null;
+    };
+    const sessions = data as SessionRow[];
+    const header = 'Type,Duration (min),Task,Started At,Ended At';
+    const rows = sessions.map(s =>
+      `${s.type},${Math.floor(s.duration / 60)},"${s.task?.title ?? '—'}",${s.startedAt.toISOString()},${s.endedAt?.toISOString() ?? ''}`
+    );
+    return [header, ...rows].join('\n');
+  }
+
+  protected async generateFile(data: unknown): Promise<ReportResult> {
+    return {
+      content: data as string,
+      filename: `pomodoro-${Date.now()}.csv`,
+      contentType: 'text/csv',
+    };
+  }
+}
+
+class PomodoroJSONExporter extends ReportExporter {
+  protected async collectData(userId: string) {
+    return prisma.pomodoroSession.findMany({
+      where: { userId },
+      include: { task: { select: { title: true } } },
+      orderBy: { startedAt: 'desc' },
+    });
+  }
+
+  protected formatData(data: unknown) {
+    return JSON.stringify(data, null, 2);
+  }
+
+  protected async generateFile(data: unknown): Promise<ReportResult> {
+    return {
+      content: data as string,
+      filename: `pomodoro-${Date.now()}.json`,
+      contentType: 'application/json',
+    };
+  }
+}
+
+export async function exportTags(userId: string, format: 'csv' | 'json') {
+  const exporter = format === 'csv' ? new TagsCSVExporter() : new TagsJSONExporter();
+  return exporter.exportReport(userId);
+}
+
+export async function exportPomodoro(userId: string, format: 'csv' | 'json') {
+  const exporter = format === 'csv' ? new PomodoroCSVExporter() : new PomodoroJSONExporter();
   return exporter.exportReport(userId);
 }

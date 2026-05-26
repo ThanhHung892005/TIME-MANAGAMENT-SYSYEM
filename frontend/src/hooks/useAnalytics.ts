@@ -29,3 +29,18 @@ export function useHeatmap() {
     queryFn: analyticsService.getHeatmap,
   });
 }
+export function useOverdueStats() {
+  return useQuery({
+    queryKey: ['analytics', 'overdue'],
+    queryFn: () => analyticsService.getOverdueStats(),
+    staleTime: 60 * 1000,
+  });
+}
+
+export function usePriorityStats() {
+  return useQuery({
+    queryKey: ['analytics', 'priority'],
+    queryFn: () => analyticsService.getPriorityStats(),
+    staleTime: 60 * 1000,
+  });
+}

@@ -23,6 +23,12 @@ jest.mock('../../utils/jwt', () => ({
   signToken: jest.fn().mockReturnValue('mock-token'),
 }));
 
+jest.mock('../../services/emailService', () => ({
+  sendPasswordResetEmail: jest.fn(),
+  sendOTPEmail: jest.fn(),
+  sendReminderEmail: jest.fn(),
+}));
+
 const mockFindUnique = prisma.user.findUnique as jest.Mock;
 const mockCreate = prisma.user.create as jest.Mock;
 const mockHash = bcrypt.hash as unknown as jest.Mock;
