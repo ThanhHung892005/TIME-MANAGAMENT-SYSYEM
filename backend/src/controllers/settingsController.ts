@@ -19,3 +19,12 @@ export async function updateSettings(req: AuthRequest, res: Response, next: Next
     next(err);
   }
 }
+
+export async function deleteAccount(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const result = await settingsService.deleteAccount(req.user!.userId);
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
