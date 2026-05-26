@@ -15,14 +15,18 @@ model User {
   googleId       String?           @unique
   name           String
   avatar         String?
-  theme          String?           @default("light")
-  timezone       String?           @default("UTC")
-  pomodoroDuration Int?            @default(25)
+  theme              String?           @default("light")
+  timezone           String?           @default("UTC")
+  pomodoroDuration   Int?              @default(25)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
+  resetPasswordToken String? @unique
+  resetPasswordExpires DateTime?
   tasks          Task[]
   sessions       PomodoroSession[]
   tags           Tag[]
+  emailNotifications Boolean @default(true)
+  pushNotifications Boolean @default(true)
 }
 
 model Task {
