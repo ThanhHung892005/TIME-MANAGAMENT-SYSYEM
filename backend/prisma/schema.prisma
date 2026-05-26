@@ -23,7 +23,8 @@ model User {
   tasks          Task[]
   sessions       PomodoroSession[]
   tags           Tag[]
-  notifications Notification[]
+  notifications     Notification[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Task {
@@ -134,4 +135,14 @@ model Notification {
 enum NotificationType {
   DEADLINE_SOON
   OVERDUE
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }

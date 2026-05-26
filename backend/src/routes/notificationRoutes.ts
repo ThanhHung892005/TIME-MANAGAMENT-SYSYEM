@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticate } from '../middlewares/auth';
+import { subcribeToNotifications } from '../controllers/notificationController';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -44,5 +45,8 @@ router.patch('/:id/read', authenticate, async (req: any, res) => {
         res.status(500).json({ error: 'Có lỗi xảy ra' });
     }
 });
+
+// POST /api/notifications/subscribe — Web Push subscription
+router.post('/subscribe', authenticate, subcribeToNotifications);
 
 export default router;

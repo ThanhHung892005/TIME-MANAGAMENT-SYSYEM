@@ -8,6 +8,7 @@ import cron from 'node-cron';
 import { checkAndCreateNotifications } from './services/notificationService';
 import notificationRouter from './routes/notificationRoutes';
 import { taskEvents, TASK_EVENTS, OverdueTaskPayload } from './events/taskEvents';
+import { sendOverdueAlerts } from './services/pushNotificationService';
 
 // Routes
 app.use('/api/notifications', notificationRouter);
@@ -31,8 +32,8 @@ async function main() {
 
   // Lắng nghe event overdue từ Dev B
   taskEvents.on(TASK_EVENTS.TASKS_OVERDUE, async (tasks: OverdueTaskPayload[]) => {
-    // pushNotificationService chưa có - bỏ qua cho đến khi Dev C implement
     logger.info(`[Event] ${tasks.length} overdue tasks received`);
+    await sendOverdueAlerts(tasks);
   });
 
   startAutoOverdueJob();
