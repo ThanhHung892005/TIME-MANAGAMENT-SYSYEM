@@ -363,10 +363,56 @@ npm run dev
 # Docker
 
 ```bash
+# 1. Tạo file .env từ template
+cp .env.example .env
+
+# 2. Điền password thật vào .env (POSTGRES_PASSWORD, JWT_SECRET, SESSION_SECRET)
+
+# 3. Build và start toàn bộ stack (PostgreSQL + Backend + Frontend)
 docker compose up -d
+
+# Truy cập tại http://localhost
 ```
 
-Dừng services:
+```bash
+# Dừng
+docker compose down
+
+# Xem log
+docker compose logs -f backend
+
+# Rebuild sau khi sửa code
+docker compose build && docker compose up -d
+```
+
+> Docker Compose tự đọc file `.env` ở root, tạo database, chạy migration và start tất cả services.
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Mô tả |
+|--------|----------|-------|
+| POST | `/api/auth/register` | Đăng ký tài khoản |
+| POST | `/api/auth/login` | Đăng nhập |
+| GET | `/api/auth/me` | Lấy profile |
+| GET | `/api/auth/google` | Đăng nhập Google OAuth |
+| GET | `/api/tasks` | Danh sách task |
+| POST | `/api/tasks` | Tạo task mới |
+| PATCH | `/api/tasks/:id` | Cập nhật task |
+| DELETE | `/api/tasks/:id` | Xóa task |
+| PATCH | `/api/tasks/reorder` | Sắp xếp lại task |
+| POST | `/api/tasks/:id/duplicate` | Nhân bản task |
+| GET | `/api/calendar/tasks` | Task theo khoảng thời gian |
+| POST | `/api/pomodoro/start` | Bắt đầu session |
+| PATCH | `/api/pomodoro/:id/end` | Kết thúc session |
+| GET | `/api/analytics/summary` | Thống kê tổng hợp |
+| GET | `/api/analytics/export/:format` | Export (csv/json/pdf) |
+| GET | `/api/health` | Health check |
+
+---
+
+## Chạy Tests
 
 ```bash
 docker compose down

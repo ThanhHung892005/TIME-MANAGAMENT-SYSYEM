@@ -15,14 +15,20 @@ model User {
   googleId       String?           @unique
   name           String
   avatar         String?
-  theme          String?           @default("light")
-  timezone       String?           @default("UTC")
-  pomodoroDuration Int?            @default(25)
+  theme              String?           @default("light")
+  timezone           String?           @default("UTC")
+  pomodoroDuration   Int?              @default(25)
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
+  resetPasswordToken String? @unique
+  resetPasswordExpires DateTime?
   tasks          Task[]
   sessions       PomodoroSession[]
   tags           Tag[]
+  emailNotifications Boolean            @default(true)
+  pushNotifications  Boolean            @default(false)
+  notifications      Notification[]
+  pushSubscriptions  PushSubscription[]
 }
 
 model Task {
@@ -33,7 +39,8 @@ model Task {
   status        Status            @default(TODO)
   deadline      DateTime?
   isRecurring   Boolean           @default(false)
-  recurringType String?
+  recurringType RecurringType?
+  nextDueAt     DateTime?
   order         Int               @default(0)
   userId        String
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -47,6 +54,7 @@ model Task {
   @@index([status])
   @@index([priority])
   @@index([deadline])
+  @@index([nextDueAt])
 }
 
 model Subtask {
@@ -107,4 +115,38 @@ enum Status {
   IN_PROGRESS
   COMPLETED
   ARCHIVED
+  OVERDUE
+}
+
+enum RecurringType {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId    String?
+  type      NotificationType
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+enum NotificationType {
+  DEADLINE_SOON
+  OVERDUE
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 }
