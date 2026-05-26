@@ -17,24 +17,38 @@ abstract class ReportExporter {
 }
 
 class CSVReportExporter extends ReportExporter {
+
   protected async collectData(userId: string) {
-    return prisma.task.findMany({
+    return prisma.pomodoroSession.findMany({
       where: { userId },
-      include: { subtasks: true },
-      orderBy: { createdAt: 'desc' },
+      include: { task: { select: { title: true } } },
+      orderBy: { startedAt: 'desc' },
     });
   }
 
+
   protected formatData(data: unknown) {
     type SessionRow = {
-      type: string; duration: number; startedAt: Date;
-      endedAt: Date | null; task: { title: string } | null;
+      type: string;
+      duration: number;
+      startedAt: Date | string;
+      endedAt: Date | string | null;
+      task: { title: string } | null;
     };
     const sessions = data as SessionRow[];
+
+
     const header = 'Type;Duration (min);Task;Started At;Ended At';
-    const rows = sessions.map(s =>
-      `${s.type};${Math.floor(s.duration / 60)};"${s.task?.title ?? '—'}";${s.startedAt.toISOString()};${s.endedAt?.toISOString() ?? ''}`
-    );
+
+    const rows = sessions.map(s => {
+      const startStr = s.startedAt ? new Date(s.startedAt).toISOString() : '';
+      const endStr = s.endedAt ? new Date(s.endedAt).toISOString() : '';
+      const durationMin = s.duration ? Math.floor(s.duration / 60) : 0;
+
+
+      return `${s.type ?? ''};${durationMin};"${s.task?.title ?? '—'}";${startStr};${endStr}`;
+    });
+
     return [header, ...rows].join('\n');
   }
 
