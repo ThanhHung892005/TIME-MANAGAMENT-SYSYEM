@@ -1,5 +1,6 @@
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH';
-export type Status = 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED';
+export type Status = 'TODO' | 'IN_PROGRESS' | 'COMPLETED' | 'ARCHIVED' | 'OVERDUE';
+export type RecurringType = 'DAILY' | 'WEEKLY' | 'MONTHLY';
 
 export interface User {
   id: string;
@@ -31,6 +32,9 @@ export interface Task {
   priority: Priority;
   status: Status;
   deadline: string | null;
+  isRecurring: boolean;
+  recurringType: RecurringType | null;
+  nextDueAt: string | null;
   order: number;
   userId: string;
   subtasks: Subtask[];
@@ -57,6 +61,8 @@ export interface CreateTaskDTO {
   status?: Status;
   deadline?: string | null;
   tagIds?: string[];
+  isRecurring?: boolean;
+  recurringType?: RecurringType | null;
   type?: 'personal' | 'work' | 'study' | 'recurring';
 }
 

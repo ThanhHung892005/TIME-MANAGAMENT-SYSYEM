@@ -224,7 +224,7 @@ class TaskService {
   }
 
   async reorder(userId: string, orderedIds: string[]) {
-    await Promise.all(
+    await prisma.$transaction(
       orderedIds.map((id, index) =>
         prisma.task.updateMany({ where: { id, userId }, data: { order: index } }),
       ),

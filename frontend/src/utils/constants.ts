@@ -9,6 +9,7 @@ export const STATUS_COLORS = {
   IN_PROGRESS: 'bg-blue-100 text-blue-700',
   COMPLETED: 'bg-green-100 text-green-700',
   ARCHIVED: 'bg-gray-100 text-gray-400',
+  OVERDUE: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
 } as const;
 
 export const STATUS_LABELS = {
@@ -16,6 +17,7 @@ export const STATUS_LABELS = {
   IN_PROGRESS: 'In Progress',
   COMPLETED: 'Completed',
   ARCHIVED: 'Archived',
+  OVERDUE: 'Overdue',
 } as const;
 
 export const PRIORITY_LABELS = {

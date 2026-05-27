@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { TaskList } from '@/components/tasks/TaskList';
@@ -8,7 +9,18 @@ import { useTaskStore } from '@/store/taskStore';
 
 export function Tasks() {
   const { filters, openForm } = useTaskStore();
-  const { data: tasks = [], isLoading } = useTasks();
+
+  const serverParams = useMemo(() => {
+    const p: Record<string, string> = {};
+    if (filters.status) p['status'] = filters.status;
+    if (filters.priority) p['priority'] = filters.priority;
+    if (filters.search) p['search'] = filters.search;
+    if (filters.tagId) p['tagId'] = filters.tagId;
+    if (filters.sort && filters.sort !== 'order') p['sort'] = filters.sort;
+    return p;
+  }, [filters.status, filters.priority, filters.search, filters.tagId, filters.sort]);
+
+  const { data: tasks = [], isLoading } = useTasks(serverParams);
 
   return (
     <div className="p-8 max-w-3xl">
@@ -30,7 +42,7 @@ export function Tasks() {
           ))}
         </div>
       ) : (
-        <TaskList tasks={tasks} sortKey={filters.sort} filters={filters} />
+        <TaskList tasks={tasks} sortKey={filters.sort} filters={{ search: '' }} />
       )}
 
       <TaskForm />

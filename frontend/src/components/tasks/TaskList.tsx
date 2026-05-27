@@ -1,6 +1,6 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core';
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
 import { TaskCard } from './TaskCard';
 import type { Task } from '@/types';
 import { sortTasks } from '@/utils/sortStrategies';
@@ -16,18 +16,20 @@ interface TaskListProps {
 
 export const TaskList = React.memo(function TaskList({ tasks, sortKey, filters }: TaskListProps) {
   const qc = useQueryClient();
+  const [optimisticOrder, setOptimisticOrder] = useState<Task[] | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   const filtered = useMemo(() => {
-    let result = [...tasks];
+    const base = optimisticOrder ?? tasks;
+    let result = [...base];
     if (filters.status) result = result.filter((t) => t.status === filters.status);
     if (filters.priority) result = result.filter((t) => t.priority === filters.priority);
     if (filters.search) result = result.filter((t) => t.title.toLowerCase().includes(filters.search.toLowerCase()));
     return sortTasks(result, sortKey);
-  }, [tasks, filters, sortKey]);
+  }, [tasks, optimisticOrder, filters, sortKey]);
 
   const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -35,12 +37,15 @@ export const TaskList = React.memo(function TaskList({ tasks, sortKey, filters }
 
     const oldIndex = filtered.findIndex((t) => t.id === active.id);
     const newIndex = filtered.findIndex((t) => t.id === over.id);
-    const reordered = [...filtered];
-    const [moved] = reordered.splice(oldIndex, 1);
-    reordered.splice(newIndex, 0, moved!);
+    const reordered = arrayMove(filtered, oldIndex, newIndex);
 
-    await taskService.reorder(reordered.map((t) => t.id));
-    qc.invalidateQueries({ queryKey: ['tasks'] });
+    setOptimisticOrder(reordered);
+    try {
+      await taskService.reorder(reordered.map((t) => t.id));
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    } finally {
+      setOptimisticOrder(null);
+    }
   }, [filtered, qc]);
 
   if (filtered.length === 0) {

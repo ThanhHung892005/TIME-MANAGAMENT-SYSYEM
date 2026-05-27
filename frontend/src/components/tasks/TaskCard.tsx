@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Calendar, GripVertical, MoreVertical, CheckCircle, Circle, Copy, Trash2 } from 'lucide-react';
+import { Calendar, GripVertical, MoreVertical, CheckCircle, Circle, Copy, Trash2, RefreshCw } from 'lucide-react';
 import type { Task } from '@/types';
 import { PRIORITY_COLORS, STATUS_LABELS } from '@/utils/constants';
 import { formatDate, getDeadlineColor, isOverdue } from '@/utils/dateHelpers';
@@ -40,29 +40,35 @@ export const TaskCard = React.memo(function TaskCard({ task }: TaskCardProps) {
   }, [task.id, duplicateTask]);
 
   const completedSubtasks = task.subtasks.filter((s) => s.completed).length;
+  const isCompleted = task.status === 'COMPLETED';
 
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`group flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer ${isDragging ? 'opacity-50 shadow-lg' : ''} ${task.status === 'COMPLETED' ? 'opacity-60' : ''}`}
+      className={`group flex items-start gap-3 p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all cursor-pointer ${isDragging ? 'opacity-50 shadow-lg' : ''} ${isCompleted ? 'opacity-60' : ''}`}
       onClick={() => setSelectedTask(task.id)}
     >
       <div {...attributes} {...listeners} className="mt-0.5 cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600 flex-shrink-0">
         <GripVertical className="w-4 h-4" />
       </div>
 
-      <button onClick={handleComplete} aria-label={task.status === 'COMPLETED' ? 'Mark incomplete' : 'Mark complete'} className="mt-0.5 flex-shrink-0">
-        {task.status === 'COMPLETED'
+      <button onClick={handleComplete} aria-label={isCompleted ? 'Mark incomplete' : 'Mark complete'} className="mt-0.5 flex-shrink-0">
+        {isCompleted
           ? <CheckCircle className="w-5 h-5 text-green-500" />
           : <Circle className="w-5 h-5 text-gray-300 hover:text-green-400 transition-colors" />
         }
       </button>
 
       <div className="flex-1 min-w-0">
-        <p className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${task.status === 'COMPLETED' ? 'line-through text-gray-400' : ''}`}>
-          {task.title}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <p className={`text-sm font-medium text-gray-900 dark:text-gray-100 truncate ${isCompleted ? 'line-through text-gray-400' : ''}`}>
+            {task.title}
+          </p>
+          {task.isRecurring && (
+            <RefreshCw className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" title="Recurring task" />
+          )}
+        </div>
 
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${PRIORITY_COLORS[task.priority]}`}>
@@ -79,6 +85,20 @@ export const TaskCard = React.memo(function TaskCard({ task }: TaskCardProps) {
             <span className="text-xs text-gray-400">{completedSubtasks}/{task.subtasks.length}</span>
           )}
         </div>
+
+        {task.tags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {task.tags.map(({ tag }) => (
+              <span
+                key={tag.id}
+                className="px-2 py-0.5 rounded-full text-xs font-medium text-white"
+                style={{ backgroundColor: tag.color }}
+              >
+                {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="relative flex-shrink-0">
