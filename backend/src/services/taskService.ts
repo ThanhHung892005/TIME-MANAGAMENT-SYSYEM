@@ -140,14 +140,15 @@ class TaskService {
       : undefined;
 
     // Recurring: completing a recurring task spawns the next occurrence
+    const baseDeadline = resolvedDeadline ?? existing.deadline;
     let nextDueAt: Date | undefined;
     if (
       data.status === Status.COMPLETED &&
       existing.isRecurring &&
       existing.recurringType &&
-      (resolvedDeadline ?? existing.deadline)
+      baseDeadline  // skip gracefully if no deadline to base recurrence on
     ) {
-      const base = resolvedDeadline ?? existing.deadline!;
+      const base: Date = baseDeadline;
       nextDueAt = computeNextDueAt(base, existing.recurringType);
 
       await prisma.task.create({
@@ -258,12 +259,12 @@ class TaskService {
 
   async updateSubtask(taskId: string, subtaskId: string, userId: string, data: { title?: string; completed?: boolean }) {
     await this.getById(taskId, userId);
-    return prisma.subtask.update({ where: { id: subtaskId }, data });
+    return prisma.subtask.update({ where: { id: subtaskId, taskId }, data });
   }
 
   async deleteSubtask(taskId: string, subtaskId: string, userId: string) {
     await this.getById(taskId, userId);
-    await prisma.subtask.delete({ where: { id: subtaskId } });
+    await prisma.subtask.delete({ where: { id: subtaskId, taskId } });
   }
 
   // Called by cron job — marks TODO/IN_PROGRESS tasks past deadline as OVERDUE,

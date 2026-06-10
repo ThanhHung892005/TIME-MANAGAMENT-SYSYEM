@@ -7,6 +7,7 @@ import { sortTasks } from '@/utils/sortStrategies';
 import { taskService } from '@/services/taskService';
 import { useQueryClient } from '@tanstack/react-query';
 import { ClipboardList } from 'lucide-react';
+import { useTaskStore } from '@/store/taskStore';
 
 interface TaskListProps {
   tasks: Task[];
@@ -16,6 +17,7 @@ interface TaskListProps {
 
 export const TaskList = React.memo(function TaskList({ tasks, sortKey, filters }: TaskListProps) {
   const qc = useQueryClient();
+  const { setFilters } = useTaskStore();
   const [optimisticOrder, setOptimisticOrder] = useState<Task[] | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -49,10 +51,21 @@ export const TaskList = React.memo(function TaskList({ tasks, sortKey, filters }
   }, [filtered, qc]);
 
   if (filtered.length === 0) {
+    const isFiltered = !!(filters.status || filters.priority || filters.search);
     return (
       <div className="flex flex-col items-center justify-center py-20 text-gray-400">
         <ClipboardList className="w-12 h-12 mb-3" />
-        <p className="text-sm">No tasks found</p>
+        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          {isFiltered ? 'Không tìm thấy task nào' : 'Chưa có task nào'}
+        </p>
+        {isFiltered && (
+          <button
+            onClick={() => setFilters({ status: undefined, priority: undefined, search: '' })}
+            className="mt-2 text-xs text-blue-500 hover:text-blue-600 hover:underline transition-colors"
+          >
+            Xóa bộ lọc để xem tất cả
+          </button>
+        )}
       </div>
     );
   }

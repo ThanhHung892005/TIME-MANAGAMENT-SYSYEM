@@ -1,12 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
+import { Plus, X } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { useCreateTask, useUpdateTask, useTask } from '@/hooks/useTasks';
+import { useCreateTask, useUpdateTask, useTask, useAddSubtask, useUpdateSubtask, useDeleteSubtask } from '@/hooks/useTasks';
 import { useTaskStore } from '@/store/taskStore';
 import { tagService } from '@/services/tagService';
 import type { Tag } from '@/types';
@@ -37,6 +38,9 @@ export function TaskForm() {
   const { isFormOpen, editingTaskId, closeForm } = useTaskStore();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
+  const addSubtask = useAddSubtask();
+  const updateSubtask = useUpdateSubtask();
+  const deleteSubtask = useDeleteSubtask();
   const { data: editingTask } = useTask(editingTaskId ?? '');
   const { data: tags = [] } = useQuery<Tag[]>({
     queryKey: ['tags'],
@@ -44,6 +48,9 @@ export function TaskForm() {
   });
 
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [pendingSubtasks, setPendingSubtasks] = useState<string[]>([]);
+  const [newSubtaskInput, setNewSubtaskInput] = useState('');
+  const subtaskInputRef = useRef<HTMLInputElement>(null);
 
   const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -67,6 +74,7 @@ export function TaskForm() {
     } else {
       reset(DEFAULT_VALUES);
       setSelectedTagIds([]);
+      setPendingSubtasks([]);
     }
   }, [editingTask, reset]);
 
@@ -74,6 +82,18 @@ export function TaskForm() {
     setSelectedTagIds((prev) =>
       prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
     );
+  };
+
+  const addPendingSubtask = () => {
+    const title = newSubtaskInput.trim();
+    if (!title) return;
+    if (editingTaskId) {
+      addSubtask.mutate({ taskId: editingTaskId, title });
+    } else {
+      setPendingSubtasks((prev) => [...prev, title]);
+    }
+    setNewSubtaskInput('');
+    subtaskInputRef.current?.focus();
   };
 
   const onSubmit = async (data: FormValues) => {
@@ -86,7 +106,10 @@ export function TaskForm() {
     if (editingTaskId) {
       await updateTask.mutateAsync({ id: editingTaskId, data: payload });
     } else {
-      await createTask.mutateAsync(payload);
+      const newTask = await createTask.mutateAsync(payload);
+      for (const title of pendingSubtasks) {
+        await addSubtask.mutateAsync({ taskId: newTask.id, title });
+      }
     }
     closeForm();
     reset();
@@ -176,6 +199,68 @@ export function TaskForm() {
             </div>
           </div>
         )}
+
+        {/* Subtasks */}
+        <div className="flex flex-col gap-2">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Subtasks</label>
+
+          <div className="space-y-1.5">
+            {editingTaskId && editingTask?.subtasks.map((subtask) => (
+              <div key={subtask.id} className="flex items-center gap-2 group/sub">
+                <input
+                  type="checkbox"
+                  checked={subtask.completed}
+                  onChange={() => updateSubtask.mutate({ taskId: editingTaskId, subtaskId: subtask.id, data: { completed: !subtask.completed } })}
+                  className="w-3.5 h-3.5 rounded accent-blue-500 cursor-pointer"
+                />
+                <span className={`text-sm flex-1 ${subtask.completed ? 'line-through text-gray-400' : 'text-gray-700 dark:text-gray-300'}`}>
+                  {subtask.title}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => deleteSubtask.mutate({ taskId: editingTaskId, subtaskId: subtask.id })}
+                  className="opacity-0 group-hover/sub:opacity-100 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                >
+                  <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                </button>
+              </div>
+            ))}
+
+            {!editingTaskId && pendingSubtasks.map((title, idx) => (
+              <div key={idx} className="flex items-center gap-2 group/sub">
+                <span className="w-3.5 h-3.5" />
+                <span className="text-sm flex-1 text-gray-700 dark:text-gray-300">{title}</span>
+                <button
+                  type="button"
+                  onClick={() => setPendingSubtasks((prev) => prev.filter((_, i) => i !== idx))}
+                  className="opacity-0 group-hover/sub:opacity-100 p-0.5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                >
+                  <X className="w-3.5 h-3.5 text-gray-400 hover:text-red-500" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              ref={subtaskInputRef}
+              type="text"
+              placeholder="Thêm subtask..."
+              value={newSubtaskInput}
+              onChange={(e) => setNewSubtaskInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addPendingSubtask(); } }}
+              className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={addPendingSubtask}
+              disabled={!newSubtaskInput.trim()}
+              className="p-1.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
 
         <div className="flex justify-end gap-2 pt-2">
           <Button type="button" variant="secondary" onClick={closeForm}>Cancel</Button>

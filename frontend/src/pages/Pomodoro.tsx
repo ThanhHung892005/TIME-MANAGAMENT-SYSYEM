@@ -17,7 +17,7 @@ export function Pomodoro() {
     queryFn: () => pomodoroService.getHistory(20),
   });
 
-  const { phase, minutes, seconds, progress, isRunning, start, pause, resume, reset } = usePomodoro(linkedTaskId);
+  const { phase, minutes, seconds, progress, isRunning, start, pause, resume, reset, skipPhase } = usePomodoro(linkedTaskId);
 
   const radius = 90;
   const circumference = 2 * Math.PI * radius;
@@ -73,7 +73,7 @@ export function Pomodoro() {
           >
             {isRunning ? <><Pause className="w-5 h-5" />Pause</> : <><Play className="w-5 h-5" />Start</>}
           </Button>
-          <button onClick={reset} aria-label="Skip phase" className="p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+          <button onClick={skipPhase} aria-label="Skip phase" className="p-3 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
             <SkipForward className="w-5 h-5 text-gray-500" />
           </button>
         </div>

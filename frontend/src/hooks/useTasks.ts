@@ -76,6 +76,7 @@ export function useDuplicateTask() {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       toast.success('Task duplicated!');
     },
+    onError: () => toast.error('Failed to duplicate task'),
   });
 }
 
@@ -97,6 +98,7 @@ export function useAddSubtask() {
     mutationFn: ({ taskId, title }: { taskId: string; title: string }) =>
       taskService.addSubtask(taskId, title),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onError: () => toast.error('Failed to add subtask'),
   });
 }
 
@@ -108,6 +110,7 @@ export function useUpdateSubtask() {
     }: { taskId: string; subtaskId: string; data: { title?: string; completed?: boolean } }) =>
       taskService.updateSubtask(taskId, subtaskId, data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onError: () => toast.error('Failed to update subtask'),
   });
 }
 
@@ -117,5 +120,6 @@ export function useDeleteSubtask() {
     mutationFn: ({ taskId, subtaskId }: { taskId: string; subtaskId: string }) =>
       taskService.deleteSubtask(taskId, subtaskId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['tasks'] }),
+    onError: () => toast.error('Failed to delete subtask'),
   });
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Search, Tags } from 'lucide-react';
+import { Search, Tags, X } from 'lucide-react';
 import { useTaskStore } from '@/store/taskStore';
 import { useTags } from '@/hooks/useTags';
 import { TagManager } from '@/components/tags/TagManager';
@@ -8,6 +8,9 @@ export function TaskFilters() {
   const { filters, setFilters } = useTaskStore();
   const { data: tags = [] } = useTags();
   const [tagManagerOpen, setTagManagerOpen] = useState(false);
+
+  const isFiltered = !!(filters.status || filters.priority || filters.search || filters.tagId);
+  const clearFilters = () => setFilters({ status: undefined, priority: undefined, search: '', tagId: undefined });
 
   return (
     <>
@@ -76,6 +79,17 @@ export function TaskFilters() {
         >
           <Tags className="w-4 h-4" />
         </button>
+
+        {isFiltered && (
+          <button
+            onClick={clearFilters}
+            title="Clear all filters"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            Xóa bộ lọc
+          </button>
+        )}
       </div>
 
       <TagManager isOpen={tagManagerOpen} onClose={() => setTagManagerOpen(false)} />

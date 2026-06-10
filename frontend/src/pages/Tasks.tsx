@@ -1,14 +1,15 @@
 import { useMemo } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, CheckCheck, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { TaskList } from '@/components/tasks/TaskList';
 import { TaskFilters } from '@/components/tasks/TaskFilters';
 import { TaskForm } from '@/components/tasks/TaskForm';
-import { useTasks } from '@/hooks/useTasks';
+import { useTasks, useBulkAction } from '@/hooks/useTasks';
 import { useTaskStore } from '@/store/taskStore';
 
 export function Tasks() {
-  const { filters, openForm } = useTaskStore();
+  const { filters, openForm, selectedIds, clearSelection } = useTaskStore();
+  const bulkAction = useBulkAction();
 
   const serverParams = useMemo(() => {
     const p: Record<string, string> = {};
@@ -21,6 +22,15 @@ export function Tasks() {
   }, [filters.status, filters.priority, filters.search, filters.tagId, filters.sort]);
 
   const { data: tasks = [], isLoading } = useTasks(serverParams);
+
+  const handleBulkComplete = () => {
+    bulkAction.mutate({ ids: selectedIds, action: 'complete' }, { onSuccess: clearSelection });
+  };
+
+  const handleBulkDelete = () => {
+    if (!window.confirm(`Xóa ${selectedIds.length} task đã chọn?`)) return;
+    bulkAction.mutate({ ids: selectedIds, action: 'delete' }, { onSuccess: clearSelection });
+  };
 
   return (
     <div className="p-8 max-w-3xl">
@@ -46,6 +56,35 @@ export function Tasks() {
       )}
 
       <TaskForm />
+
+      {selectedIds.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 rounded-2xl shadow-2xl border border-gray-700 dark:border-gray-300">
+          <span className="text-sm font-medium">{selectedIds.length} task đã chọn</span>
+          <div className="w-px h-4 bg-gray-600 dark:bg-gray-400" />
+          <button
+            onClick={handleBulkComplete}
+            disabled={bulkAction.isPending}
+            className="flex items-center gap-1.5 text-sm font-medium text-green-400 dark:text-green-600 hover:text-green-300 dark:hover:text-green-500 disabled:opacity-50 transition-colors"
+          >
+            <CheckCheck className="w-4 h-4" />
+            Hoàn thành
+          </button>
+          <button
+            onClick={handleBulkDelete}
+            disabled={bulkAction.isPending}
+            className="flex items-center gap-1.5 text-sm font-medium text-red-400 dark:text-red-600 hover:text-red-300 dark:hover:text-red-500 disabled:opacity-50 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            Xóa
+          </button>
+          <button
+            onClick={clearSelection}
+            className="p-1 rounded-full hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -95,11 +95,23 @@ export function usePomodoro(linkedTaskId?: string) {
     }
   }, [phase, pomodoro, currentSessionId]);
 
+  const skipPhase = useCallback(() => {
+    clearInterval(intervalRef.current!);
+    setIsRunning(false);
+    if (currentSessionId) {
+      pomodoroService.endSession(currentSessionId).catch(() => null);
+      setCurrentSessionId(null);
+    }
+    const nextPhase: Phase = phase === 'work' ? 'break' : 'work';
+    setPhase(nextPhase);
+    setSecondsLeft(nextPhase === 'work' ? pomodoro.workMinutes * 60 : pomodoro.breakMinutes * 60);
+  }, [phase, pomodoro, currentSessionId]);
+
   useEffect(() => () => clearInterval(intervalRef.current!), []);
 
   const progress = 1 - secondsLeft / totalSeconds;
   const minutes = Math.floor(secondsLeft / 60);
   const seconds = secondsLeft % 60;
 
-  return { phase, minutes, seconds, progress, isRunning, start, pause, resume, reset, setPhase };
+  return { phase, minutes, seconds, progress, isRunning, start, pause, resume, reset, skipPhase, setPhase };
 }

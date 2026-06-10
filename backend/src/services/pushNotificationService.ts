@@ -2,15 +2,17 @@ import webpush from 'web-push';
 import { prisma } from '../config/database';
 import { OverdueTaskPayload } from '../events/taskEvents';
 
-if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+const vapidEnabled = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
+if (vapidEnabled) {
     webpush.setVapidDetails(
         process.env.VAPID_SUBJECT || 'mailto:example@yourdomain.org',
-        process.env.VAPID_PUBLIC_KEY,
-        process.env.VAPID_PRIVATE_KEY
+        process.env.VAPID_PUBLIC_KEY!,
+        process.env.VAPID_PRIVATE_KEY!
     );
 }
 
 export const sendOverdueAlerts = async (overdueTasks: OverdueTaskPayload[]) => {
+    if (!vapidEnabled) return;
     for (const task of overdueTasks) {
         try {
             const user = await prisma.user.findUnique({

@@ -52,7 +52,7 @@ export const checkAndCreateNotifications = async () => {
                         message: `Task "${task.title}" đã quá hạn vào ${due.toLocaleString('vi-VN')}.`,
                     },
                 });
-                await sendReminderEmail(user.email, 'overdue', task.title, due);
+                await sendReminderEmail(user.email, 'overdue', task.title, due).catch(() => {});
 
             } else if (diffMs <= reminderMs) {
                 // Task sắp deadline
@@ -66,7 +66,7 @@ export const checkAndCreateNotifications = async () => {
                         message: `Task "${task.title}" sẽ hết hạn sau ${hoursLeft} giờ.`,
                     },
                 });
-                await sendReminderEmail(user.email, 'soon', task.title, due);
+                await sendReminderEmail(user.email, 'soon', task.title, due).catch(() => {});
             }
         }
     }
