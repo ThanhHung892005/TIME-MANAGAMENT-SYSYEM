@@ -6,17 +6,8 @@ import { logger } from './utils/logger';
 import { startAutoOverdueJob } from './jobs/autoOverdue';
 import cron from 'node-cron';
 import { checkAndCreateNotifications } from './services/notificationService';
-import notificationRouter from './routes/notificationRoutes';
 import { taskEvents, TASK_EVENTS, OverdueTaskPayload } from './events/taskEvents';
 
-// Routes
-app.use('/api/notifications', notificationRouter);
-
-// Route test - xóa sau khi test xong
-app.get('/api/test-notifications', async (req, res) => {
-  await checkAndCreateNotifications();
-  res.json({ message: 'Done' });
-});
 
 // Cron: kiểm tra notification mỗi 15 phút
 cron.schedule('*/15 * * * *', () => {

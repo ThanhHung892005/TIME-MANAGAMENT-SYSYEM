@@ -18,6 +18,8 @@ export function Analytics() {
   const { data: heatmap = [] } = useHeatmap();
   const { data: overdue } = useOverdueStats();
   const { data: priority = [] } = usePriorityStats();
+  const hasCompletionData = completion.some(item => item.completed > 0);
+  const hasPriorityData = priority.some(item => item.count > 0);
 
   const handleExport = async (format: 'csv' | 'json' | 'pdf') => {
     try {
@@ -86,45 +88,57 @@ export function Analytics() {
       {/* Charts row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ChartCard title="Tasks Completed (Last 7 Days)">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={completion}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} />
-              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-              <Tooltip />
-              <Bar dataKey="completed" fill="#3B82F6" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          {hasCompletionData ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={completion}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} />
+                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                <Tooltip />
+                <Bar dataKey="completed" fill="#3B82F6" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyChart />
+          )}
         </ChartCard>
 
         <ChartCard title="Tasks by Priority">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={priority} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
-              <YAxis type="category" dataKey="priority" tick={{ fontSize: 11 }} width={50} />
-              <Tooltip />
-              <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                {priority.map((entry, i) => (
-                  <Cell key={i} fill={entry.fill} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+          {hasPriorityData ? (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={priority} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis type="number" tick={{ fontSize: 11 }} allowDecimals={false} />
+                <YAxis type="category" dataKey="priority" tick={{ fontSize: 11 }} width={50} />
+                <Tooltip />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                  {priority.map((entry, i) => (
+                    <Cell key={i} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <EmptyChart />
+          )}
         </ChartCard>
       </div>
 
       {/* Productivity Trend */}
       <ChartCard title="Productivity Trend">
-        <ResponsiveContainer width="100%" height={200}>
-          <LineChart data={completion}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-            <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} />
-            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-            <Tooltip />
-            <Line type="monotone" dataKey="completed" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} />
-          </LineChart>
-        </ResponsiveContainer>
+        {hasCompletionData ? (
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={completion}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+              <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} />
+              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+              <Tooltip />
+              <Line type="monotone" dataKey="completed" stroke="#8B5CF6" strokeWidth={2} dot={{ r: 3 }} />
+            </LineChart>
+          </ResponsiveContainer>
+        ) : (
+          <EmptyChart />
+        )}
       </ChartCard>
 
       {/* Heatmap */}
@@ -198,6 +212,14 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6">
       <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-4">{title}</h2>
       {children}
+    </div>
+  );
+}
+
+function EmptyChart() {
+  return (
+    <div className="h-[200px] flex items-center justify-center rounded-lg border border-dashed border-gray-200 dark:border-gray-700 text-sm text-gray-400">
+      No data yet
     </div>
   );
 }

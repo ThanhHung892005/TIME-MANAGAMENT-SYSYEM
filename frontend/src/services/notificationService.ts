@@ -2,6 +2,7 @@ import { api } from '@/lib/api';
 
 export interface Notification {
     id: string;
+    userId: string;
     taskId?: string;
     type: 'DEADLINE_SOON' | 'OVERDUE';
     title: string;

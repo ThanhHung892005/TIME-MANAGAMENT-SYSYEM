@@ -2,20 +2,27 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { notificationService } from '@/services/notificationService';
 import type { Notification } from '@/services/notificationService';
+import { useUserStore } from '@/store/userStore';
 
 export function NotificationBell() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const userId = useUserStore(state => state.user?.id);
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     const fetchNotifications = async () => {
+        if (!userId) {
+            setNotifications([]);
+            return;
+        }
+
         try {
             const data = await notificationService.getAll();
-            setNotifications(data);
+            setNotifications(data.filter(n => n.userId === userId));
         } catch {
-            // ignore
+            setNotifications([]);
         }
     };
 
@@ -24,7 +31,7 @@ export function NotificationBell() {
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [userId]);
 
     // Click outside để đóng
     useEffect(() => {

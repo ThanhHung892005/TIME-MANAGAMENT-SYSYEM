@@ -13,6 +13,9 @@ import analyticsRoutes from './routes/analyticsRoutes';
 import oauthRoutes from './routes/oauthRoutes';
 import tagRoutes from './routes/tagRoutes';
 import settingsRoutes from './routes/settingsRoutes';
+import notificationRoutes from './routes/notificationRoutes';
+import { authenticate } from './middlewares/auth';
+import { checkAndCreateNotifications } from './services/notificationService';
 
 const app = express();
 
@@ -29,6 +32,16 @@ app.use('/api/calendar', calendarRoutes);
 app.use('/api/pomodoro', pomodoroRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/notifications', notificationRoutes);
+
+app.get('/api/test-notifications', authenticate, async (req, res, next) => {
+  try {
+    await checkAndCreateNotifications(req.user!.userId);
+    res.json({ message: 'Done' });
+  } catch (err) {
+    next(err);
+  }
+});
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
