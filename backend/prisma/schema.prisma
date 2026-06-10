@@ -158,3 +158,11 @@ model OTP {
   expiresAt DateTime
   createdAt DateTime @default(now())
 }
+
+model RevokedToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

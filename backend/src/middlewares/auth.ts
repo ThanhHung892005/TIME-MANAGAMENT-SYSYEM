@@ -4,7 +4,7 @@ import { UnauthorizedError } from '../types';
 import { isTokenBlacklisted } from '../utils/tokenBlacklist';
 import type { AuthRequest } from '../types';
 
-export function authenticate(req: AuthRequest, _res: Response, next: NextFunction): void {
+export async function authenticate(req: AuthRequest, _res: Response, next: NextFunction): Promise<void> {
   // Try to get token from cookie first, then fall back to Authorization header
   let token = req.cookies?.token;
 
@@ -20,7 +20,7 @@ export function authenticate(req: AuthRequest, _res: Response, next: NextFunctio
   }
 
   // Check if token is blacklisted (logged out)
-  if (isTokenBlacklisted(token)) {
+  if (await isTokenBlacklisted(token)) {
     return next(new UnauthorizedError('Token has been revoked'));
   }
 

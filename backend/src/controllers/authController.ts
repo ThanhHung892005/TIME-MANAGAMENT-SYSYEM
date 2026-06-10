@@ -1,4 +1,5 @@
 import { Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
 import { authService } from '../services/authService';
 import { blacklistToken } from '../utils/tokenBlacklist';
 import type { AuthRequest } from '../types';
@@ -75,7 +76,11 @@ export async function logout(req: AuthRequest, res: Response, next: NextFunction
   try {
     const token = req.cookies?.token;
     if (token) {
-      await blacklistToken(token);
+      const payload = jwt.decode(token) as { exp?: number } | null;
+      const remainingMs = payload?.exp ? payload.exp * 1000 - Date.now() : 7 * 24 * 60 * 60 * 1000;
+      if (remainingMs > 0) {
+        await blacklistToken(token, remainingMs);
+      }
     }
     res.clearCookie('token', {
       httpOnly: true,
