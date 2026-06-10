@@ -73,6 +73,11 @@ export type RegisterDTO = z.infer<typeof registerSchema>;
 export type LoginDTO = z.infer<typeof loginSchema>;
 export type UpdateProfileDTO = z.infer<typeof updateProfileSchema>;
 
+const userSelectFields = {
+  id: true, email: true, name: true, avatar: true, createdAt: true, password: true, googleId: true,
+  theme: true, timezone: true, pomodoroDuration: true, emailNotifications: true, pushNotifications: true,
+};
+
 class AuthService {
   async sendRegisterOtp(email: string) {
     const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -111,7 +116,7 @@ class AuthService {
     const hashed = await bcrypt.hash(data.password, 12);
     const user = await prisma.user.create({
       data: { email: data.email, password: hashed, name: data.name },
-      select: { id: true, email: true, name: true, avatar: true, createdAt: true },
+      select: userSelectFields,
     });
 
     // @ts-ignore
@@ -139,7 +144,7 @@ class AuthService {
   async getProfile(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, avatar: true, createdAt: true, password: true },
+      select: userSelectFields,
     });
     if (!user) throw new AppError('User not found', 404);
     
@@ -151,7 +156,7 @@ class AuthService {
     return prisma.user.update({
       where: { id: userId },
       data,
-      select: { id: true, email: true, name: true, avatar: true, createdAt: true },
+      select: userSelectFields,
     });
   }
 
@@ -246,10 +251,7 @@ class AuthService {
     if (!user) {
       user = await prisma.user.findUnique({ where: { email: profile.email } });
       if (user) {
-        user = await prisma.user.update({
-          where: { id: user.id },
-          data: { googleId: profile.googleId, avatar: user.avatar ?? profile.avatar },
-        });
+        throw new AppError('Email đã được đăng ký bằng phương thức khác. Vui lòng đăng nhập bằng mật khẩu.', 409);
       } else {
         user = await prisma.user.create({
           data: {

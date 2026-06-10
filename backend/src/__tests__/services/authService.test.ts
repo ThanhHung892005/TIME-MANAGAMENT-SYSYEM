@@ -11,6 +11,11 @@ jest.mock('../../config/database', () => ({
       create: jest.fn(),
       update: jest.fn(),
     },
+    oTP: {
+      findUnique: jest.fn(),
+      upsert: jest.fn(),
+      delete: jest.fn(),
+    },
   },
 }));
 
@@ -31,6 +36,7 @@ jest.mock('../../services/emailService', () => ({
 
 const mockFindUnique = prisma.user.findUnique as jest.Mock;
 const mockCreate = prisma.user.create as jest.Mock;
+const mockOtpFindUnique = prisma.oTP.findUnique as jest.Mock;
 const mockHash = bcrypt.hash as unknown as jest.Mock;
 const mockCompare = bcrypt.compare as unknown as jest.Mock;
 
@@ -51,33 +57,35 @@ describe('AuthService.register', () => {
   it('throws 409 if email already exists', async () => {
     mockFindUnique.mockResolvedValue(baseUser);
     await expect(
-      authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test' }),
+      authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test', otp: '123456' }),
     ).rejects.toThrow(AppError);
 
     await expect(
-      authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test' }),
+      authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test', otp: '123456' }),
     ).rejects.toMatchObject({ statusCode: 409 });
   });
 
   it('hashes password with salt 12', async () => {
     mockFindUnique.mockResolvedValue(null);
+    mockOtpFindUnique.mockResolvedValue({ email: 'test@example.com', otp: '123456', expiresAt: new Date(Date.now() + 10000) });
     mockHash.mockResolvedValue('hashed-pw');
     mockCreate.mockResolvedValue(baseUser);
 
-    await authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test' });
+    await authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test', otp: '123456' });
 
     expect(mockHash).toHaveBeenCalledWith('pass1234', 12);
   });
 
   it('returns user and token on success', async () => {
     mockFindUnique.mockResolvedValue(null);
+    mockOtpFindUnique.mockResolvedValue({ email: 'test@example.com', otp: '123456', expiresAt: new Date(Date.now() + 10000) });
     mockHash.mockResolvedValue('hashed-pw');
     mockCreate.mockResolvedValue(baseUser);
 
-    const result = await authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test' });
+    const result = await authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test', otp: '123456' });
 
     expect(result.token).toBe('mock-token');
-    expect(result.user).toEqual(baseUser);
+    expect(result.user).toEqual({ ...baseUser, hasPassword: false });
     expect(signToken).toHaveBeenCalledWith({ userId: baseUser.id, email: baseUser.email });
   });
 });
@@ -119,6 +127,6 @@ describe('AuthService.getProfile', () => {
   it('returns the user profile', async () => {
     mockFindUnique.mockResolvedValue(baseUser);
     const result = await authService.getProfile('user-1');
-    expect(result).toEqual(baseUser);
+    expect(result).toEqual({ ...baseUser, hasPassword: false });
   });
 });

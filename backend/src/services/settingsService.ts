@@ -6,7 +6,13 @@ import { prisma } from '../config/database';
 
 export const updateSettingsSchema = z.object({
   theme: z.enum(['light', 'dark']).optional(),
-  timezone: z.string().optional(),
+  timezone: z.string().refine((val) => {
+    try {
+      return Intl.supportedValuesOf('timeZone').includes(val);
+    } catch {
+      return false;
+    }
+  }, 'Invalid IANA Timezone').optional(),
   pomodoroDuration: z.number().int().min(5).max(180).optional(),
   emailNotifications: z.boolean().optional(),
   pushNotifications: z.boolean().optional(),
