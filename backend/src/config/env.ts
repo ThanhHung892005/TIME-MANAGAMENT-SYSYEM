@@ -8,6 +8,7 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   FRONTEND_URL: z.string().default('http://localhost:5173'),
+  BACKEND_URL: z.string().default('http://localhost:3002'),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   SESSION_SECRET: z.string().default('session-dev-secret-change-in-prod'),

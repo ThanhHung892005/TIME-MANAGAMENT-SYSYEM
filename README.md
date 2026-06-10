@@ -366,7 +366,10 @@ npm run dev
 # 1. Tạo file .env từ template
 cp .env.example .env
 
-# 2. Điền password thật vào .env (POSTGRES_PASSWORD, JWT_SECRET, SESSION_SECRET)
+# 2. Điền config vào .env:
+#    - POSTGRES_PASSWORD, JWT_SECRET, SESSION_SECRET
+#    - EMAIL_USER: Email Gmail của bạn (your@gmail.com)
+#    - EMAIL_PASS: App Password Gmail (16 ký tự, lấy tại: https://myaccount.google.com/apppasswords)
 
 # 3. Build và start toàn bộ stack (PostgreSQL + Backend + Frontend)
 docker compose up -d

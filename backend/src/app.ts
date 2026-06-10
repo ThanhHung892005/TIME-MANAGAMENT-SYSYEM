@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
+import cookieParser from 'cookie-parser';
 import { env } from './config/env';
 import passport from './config/passport';
 import { errorHandler } from './middlewares/errorHandler';
@@ -18,6 +19,7 @@ const app = express();
 
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
+app.use(cookieParser());
 app.use(session({ secret: env.SESSION_SECRET, resave: false, saveUninitialized: false }));
 app.use(passport.initialize());
 

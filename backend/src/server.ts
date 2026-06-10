@@ -1,4 +1,8 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+// Load .env from project root (not from backend/ directory)
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+
 import app from './app';
 import { env } from './config/env';
 import { prisma } from './config/database';

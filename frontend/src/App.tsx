@@ -7,11 +7,14 @@ import { ProtectedRoute } from '@/components/ui/ProtectedRoute';
 import { Login } from '@/pages/Login';
 import { Register } from '@/pages/Register';
 import { AuthCallback } from '@/pages/AuthCallback';
+import { ForgotPassword } from '@/pages/ForgotPassword';
+import { ResetPassword } from '@/pages/ResetPassword';
 import { Dashboard } from '@/pages/Dashboard';
 import { Tasks } from '@/pages/Tasks';
 import { Calendar } from '@/pages/Calendar';
 import { Pomodoro } from '@/pages/Pomodoro';
 import { Analytics } from '@/pages/Analytics';
+import { Settings } from '@/pages/Settings';
 
 export default function App() {
   return (
@@ -20,6 +23,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route
             element={
@@ -33,6 +38,7 @@ export default function App() {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/pomodoro" element={<Pomodoro />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

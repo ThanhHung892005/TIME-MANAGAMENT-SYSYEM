@@ -8,6 +8,7 @@ export interface User {
   name: string;
   avatar: string | null;
   createdAt: string;
+  hasPassword?: boolean;
 }
 
 export interface Tag {

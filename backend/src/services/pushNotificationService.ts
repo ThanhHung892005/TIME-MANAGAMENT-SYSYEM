@@ -2,11 +2,13 @@ import webpush from 'web-push';
 import { prisma } from '../config/database';
 import { OverdueTaskPayload } from '../events/taskEvents';
 
-webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT || 'mailto:example@yourdomain.org',
-    process.env.VAPID_PUBLIC_KEY || '',
-    process.env.VAPID_PRIVATE_KEY || ''
-);
+if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+        process.env.VAPID_SUBJECT || 'mailto:example@yourdomain.org',
+        process.env.VAPID_PUBLIC_KEY,
+        process.env.VAPID_PRIVATE_KEY
+    );
+}
 
 export const sendOverdueAlerts = async (overdueTasks: OverdueTaskPayload[]) => {
     for (const task of overdueTasks) {

@@ -1,11 +1,15 @@
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 import { AppError } from '../types';
 import { prisma } from '../config/database';
 
 
+// Intl.supportedValuesOf is available in Node 20+ but not in TypeScript's default lib
+const validTimezones = new Set((Intl as any).supportedValuesOf('timeZone') as string[]);
+
 export const updateSettingsSchema = z.object({
   theme: z.enum(['light', 'dark']).optional(),
-  timezone: z.string().optional(),
+  timezone: z.string().refine((tz) => validTimezones.has(tz), { message: 'Invalid IANA Timezone' }).optional(),
   pomodoroDuration: z.number().int().min(5).max(180).optional(),
   emailNotifications: z.boolean().optional(),
   pushNotifications: z.boolean().optional(),
@@ -49,7 +53,18 @@ class SettingsService {
     return { message: 'Settings updated successfully', settings: updatedUser };
   }
 
-  async deleteAccount(userId: string) {
+  async deleteAccount(userId: string, password?: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('User not found', 404);
+
+    if (user.password) {
+      if (!password) {
+        throw new AppError('Password is required to delete account', 400);
+      }
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) throw new AppError('Incorrect password', 401);
+    }
+
     await prisma.user.delete({ where: { id: userId } });
     return { message: 'Account deleted successfully' };
   }

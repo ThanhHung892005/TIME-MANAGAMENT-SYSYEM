@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CheckSquare, Calendar, Timer, BarChart2, LogOut } from 'lucide-react';
+import { LayoutDashboard, CheckSquare, Calendar, Timer, BarChart2, Settings, LogOut } from 'lucide-react';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
 import { useUserStore } from '@/store/userStore';
 
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/calendar', label: 'Calendar', icon: Calendar },
   { to: '/pomodoro', label: 'Pomodoro', icon: Timer },
   { to: '/analytics', label: 'Analytics', icon: BarChart2 },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function Sidebar() {
