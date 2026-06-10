@@ -10,7 +10,7 @@ import { Moon, Sun, Clock, Bell, Trash2, AlertTriangle, Shield, Eye, EyeOff, Use
 
 export function Settings() {
   const queryClient = useQueryClient();
-  const { user, setUser, logout } = useUserStore();
+  const { user, setAuth, logout } = useUserStore();
   const { toggleTheme } = useSettingsStore();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deletePassword, setDeletePassword] = useState('');
@@ -66,7 +66,7 @@ export function Settings() {
   const updateProfileMutation = useMutation({
     mutationFn: authService.updateProfile,
     onSuccess: (updatedUser) => {
-      setUser(updatedUser);
+      setAuth(updatedUser);
       toast.success('Profile updated successfully!');
     },
     onError: (error: any) => {

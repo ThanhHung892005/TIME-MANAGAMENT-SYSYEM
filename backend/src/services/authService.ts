@@ -123,8 +123,8 @@ class AuthService {
     await prisma.oTP.delete({ where: { email: data.email } });
 
     const token = signToken({ userId: user.id, email: user.email });
-    // select already excludes password/googleId; user was created with a password so hasPassword = true
-    return { user: { ...user, hasPassword: true }, token };
+    const { password: _p, googleId: _g, ...safeUser } = user;
+    return { user: { ...safeUser, hasPassword: true }, token };
   }
 
   async login(data: LoginDTO) {
@@ -153,11 +153,13 @@ class AuthService {
   }
 
   async updateProfile(userId: string, data: UpdateProfileDTO) {
-    return prisma.user.update({
+    const user = await prisma.user.update({
       where: { id: userId },
       data,
       select: userSelectFields,
     });
+    const { password, googleId: _g, ...safeUser } = user;
+    return { ...safeUser, hasPassword: !!password };
   }
 
   async forgotPassword(email: string) {
