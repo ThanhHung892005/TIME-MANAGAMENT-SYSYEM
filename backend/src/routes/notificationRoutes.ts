@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../config/database';
 import { authenticate } from '../middlewares/auth';
 import { subcribeToNotifications } from '../controllers/notificationController';
+import type { AuthRequest } from '../types';
 
 const router = Router();
-const prisma = new PrismaClient();
 
 // GET /api/notifications
-router.get('/', authenticate, async (req: any, res) => {
+router.get('/', authenticate, async (req: AuthRequest, res) => {
     try {
         const userId = req.user?.userId;
         if (!userId) {
@@ -18,15 +18,25 @@ router.get('/', authenticate, async (req: any, res) => {
             where: { userId },
             orderBy: { createdAt: 'desc' },
             take: 50,
+            select: {
+                id: true,
+                userId: true,
+                taskId: true,
+                type: true,
+                title: true,
+                message: true,
+                isRead: true,
+                createdAt: true,
+            },
         });
         res.json(notifications);
-    } catch {
-        res.status(500).json({ error: 'Có lỗi xảy ra' });
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// PATCH /api/notifications/read-all — phải đặt TRƯỚC /:id/read
-router.patch('/read-all', authenticate, async (req: any, res) => {
+// PATCH /api/notifications/read-all — must be before /:id/read
+router.patch('/read-all', authenticate, async (req: AuthRequest, res) => {
     try {
         const userId = req.user?.userId;
         if (!userId) {
@@ -38,34 +48,34 @@ router.patch('/read-all', authenticate, async (req: any, res) => {
             data: { isRead: true },
         });
         res.json({ success: true });
-    } catch {
-        res.status(500).json({ error: 'Có lỗi xảy ra' });
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // PATCH /api/notifications/:id/read
-router.patch('/:id/read', authenticate, async (req: any, res) => {
+router.patch('/:id/read', authenticate, async (req: AuthRequest, res) => {
     try {
         const userId = req.user?.userId;
         if (!userId) {
             res.status(401).json({ error: 'Unauthorized' });
             return;
         }
-        // Verify notification belongs to user before marking as read
+        const id = req.params.id;
         const notification = await prisma.notification.findFirst({
-            where: { id: req.params.id, userId },
+            where: { id, userId },
         });
         if (!notification) {
             res.status(404).json({ error: 'Notification not found' });
             return;
         }
         await prisma.notification.update({
-            where: { id: req.params.id },
+            where: { id },
             data: { isRead: true },
         });
         res.json({ success: true });
-    } catch {
-        res.status(500).json({ error: 'Có lỗi xảy ra' });
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

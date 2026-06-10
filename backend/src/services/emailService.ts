@@ -26,6 +26,14 @@ logger.info('Email service initialized with Gmail SMTP', {
     nodeEnv: env.NODE_ENV,
 });
 
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
+
 export async function sendPasswordResetEmail(to: string, token: string): Promise<void> {
     const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
 
@@ -98,6 +106,8 @@ export async function sendReminderEmail(
     dueDate: Date
 ): Promise<void> {
     const isSoon = type === 'soon';
+    const safeTitle = escapeHtml(taskTitle);
+    const safeDueDate = escapeHtml(dueDate.toLocaleString('vi-VN'));
 
     try {
         const info = await transporter.sendMail({
@@ -109,10 +119,10 @@ export async function sendReminderEmail(
                     <h2 style="color: ${isSoon ? '#F59E0B' : '#EF4444'}">
                         ${isSoon ? '⏰ Nhắc nhở deadline' : '🚨 Task quá hạn'}
                     </h2>
-                    <p>Task <b>"${taskTitle}"</b>
+                    <p>Task <b>"${safeTitle}"</b>
                         ${isSoon
-                            ? `sẽ hết hạn vào <b>${dueDate.toLocaleString('vi-VN')}</b>.`
-                            : `đã quá hạn từ <b>${dueDate.toLocaleString('vi-VN')}</b>.`
+                            ? `sẽ hết hạn vào <b>${safeDueDate}</b>.`
+                            : `đã quá hạn từ <b>${safeDueDate}</b>.`
                         }
                     </p>
                     <a href="${env.FRONTEND_URL}"

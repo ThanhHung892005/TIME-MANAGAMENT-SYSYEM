@@ -2,31 +2,38 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { notificationService } from '@/services/notificationService';
 import type { Notification } from '@/services/notificationService';
+import { useUserStore } from '@/store/userStore';
 
 export function NotificationBell() {
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const userId = useUserStore(state => state.user?.id);
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
 
     const fetchNotifications = async () => {
+        if (!userId) {
+            setNotifications([]);
+            return;
+        }
+
         try {
             const data = await notificationService.getAll();
-            setNotifications(data);
+            setNotifications(data.filter(n => n.userId === userId));
         } catch {
-            // ignore
+            setNotifications([]);
         }
     };
 
-    // Polling mỗi 30 giây
+    // Poll every 30 seconds
     useEffect(() => {
         fetchNotifications();
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
-    }, []);
+    }, [userId]);
 
-    // Click outside để đóng
+    // Close on outside click
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             if (ref.current && !ref.current.contains(e.target as Node)) {
@@ -70,10 +77,10 @@ export function NotificationBell() {
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                         <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                            Thông báo
+                            Notifications
                             {unreadCount > 0 && (
                                 <span className="ml-2 bg-red-100 text-red-600 text-xs px-1.5 py-0.5 rounded-full">
-                                    {unreadCount} mới
+                                    {unreadCount} new
                                 </span>
                             )}
                         </h3>
@@ -82,7 +89,7 @@ export function NotificationBell() {
                                 onClick={handleMarkAllRead}
                                 className="text-xs text-blue-600 hover:underline"
                             >
-                                Đọc tất cả
+                                Mark all read
                             </button>
                         )}
                     </div>
@@ -91,7 +98,7 @@ export function NotificationBell() {
                     <div className="max-h-80 overflow-y-auto">
                         {notifications.length === 0 ? (
                             <div className="py-10 text-center text-gray-400 text-sm">
-                                Không có thông báo nào
+                                No notifications
                             </div>
                         ) : (
                             notifications.map(n => (

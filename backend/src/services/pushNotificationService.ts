@@ -1,6 +1,7 @@
 import webpush from 'web-push';
 import { prisma } from '../config/database';
 import { OverdueTaskPayload } from '../events/taskEvents';
+import { logger } from '../utils/logger';
 
 const vapidEnabled = !!(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY);
 if (vapidEnabled) {
@@ -16,7 +17,7 @@ export const sendOverdueAlerts = async (overdueTasks: OverdueTaskPayload[]) => {
     for (const task of overdueTasks) {
         try {
             const user = await prisma.user.findUnique({
-                where: { id: task.userId },
+                where: { id: task.userId, pushNotifications: true },
                 include: { pushSubscriptions: true },
             });
             if (!user || user.pushSubscriptions.length === 0) continue;
@@ -36,12 +37,12 @@ export const sendOverdueAlerts = async (overdueTasks: OverdueTaskPayload[]) => {
                     if (err.statusCode === 410) {
                         await prisma.pushSubscription.delete({ where: { id: sub.id } });
                     } else {
-                        console.error('Error sending push notification:', err);
+                        logger.error('Error sending push notification:', err);
                     }
                 });
             }
         } catch (error) {
-            console.error('Error processing overdue push alert:', error);
+            logger.error('Error processing overdue push alert:', error);
         }
     }
 };

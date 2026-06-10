@@ -3,7 +3,19 @@ import { prisma } from '../config/database';
 
 type ReportResult = { content: string | Buffer; filename: string; contentType: string };
 
-/** Template Method Pattern for report export */
+// CSV Injection protection
+function escapeCSV(value: string): string {
+  if (!value) return '""';
+  const str = String(value);
+  if (/^[=+\-@]/.test(str)) return `"'${str.replace(/"/g, '""')}"`;
+  return `"${str.replace(/"/g, '""')}"`;
+}
+
+// HTML escape for email
+export function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 abstract class ReportExporter {
   async exportReport(userId: string): Promise<ReportResult> {
     const data = await this.collectData(userId);
@@ -17,45 +29,34 @@ abstract class ReportExporter {
 }
 
 class CSVReportExporter extends ReportExporter {
-
   protected async collectData(userId: string) {
-    return prisma.pomodoroSession.findMany({
+    return prisma.task.findMany({
       where: { userId },
-      include: { task: { select: { title: true } } },
-      orderBy: { startedAt: 'desc' },
+      include: { subtasks: true },
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-
   protected formatData(data: unknown) {
-    type SessionRow = {
-      type: string;
-      duration: number;
-      startedAt: Date | string;
-      endedAt: Date | string | null;
-      task: { title: string } | null;
+    type TaskRow = {
+      title: string;
+      priority: string;
+      status: string;
+      deadline: Date | null;
+      createdAt: Date;
     };
-    const sessions = data as SessionRow[];
-
-
-    const header = 'Type;Duration (min);Task;Started At;Ended At';
-
-    const rows = sessions.map(s => {
-      const startStr = s.startedAt ? new Date(s.startedAt).toISOString() : '';
-      const endStr = s.endedAt ? new Date(s.endedAt).toISOString() : '';
-      const durationMin = s.duration ? Math.floor(s.duration / 60) : 0;
-
-
-      return `${s.type ?? ''};${durationMin};"${s.task?.title ?? '—'}";${startStr};${endStr}`;
-    });
-
+    const tasks = data as TaskRow[];
+    const header = 'Title;Priority;Status;Deadline;Created At';
+    const rows = tasks.map(t =>
+      `${escapeCSV(t.title)};${escapeCSV(t.priority)};${escapeCSV(t.status)};${escapeCSV(t.deadline ? new Date(t.deadline).toLocaleDateString('vi-VN') : '')};${escapeCSV(new Date(t.createdAt).toLocaleDateString('vi-VN'))}`
+    );
     return [header, ...rows].join('\n');
   }
 
   protected async generateFile(data: unknown): Promise<ReportResult> {
     return {
       content: '\uFEFF' + (data as string),
-      filename: `pomodoro-${Date.now()}.csv`,
+      filename: `tasks-${Date.now()}.csv`,
       contentType: 'text/csv; charset=utf-8',
     };
   }
@@ -115,11 +116,11 @@ class PDFReportExporter extends ReportExporter {
       );
       doc.on('error', reject);
 
-      const completed = tasks.filter((t) => t.status === 'COMPLETED').length;
+      const completed = tasks.filter(t => t.status === 'COMPLETED').length;
       const totalFocusMin = sessions.reduce((acc, s) => acc + Math.floor(s.duration / 60), 0);
 
       doc.fontSize(20).text('Time Management Report', { align: 'center' });
-      doc.fontSize(11).fillColor('#666').text(`Generated: ${new Date().toLocaleDateString()}`, { align: 'center' });
+      doc.fontSize(11).fillColor('#666').text(`Generated: ${new Date().toLocaleDateString('vi-VN')}`, { align: 'center' });
       doc.fillColor('#000').moveDown(1.5);
 
       doc.fontSize(14).text('Summary', { underline: true });
@@ -134,9 +135,8 @@ class PDFReportExporter extends ReportExporter {
 
       doc.fontSize(14).text('Tasks', { underline: true });
       doc.moveDown(0.5);
-
       tasks.forEach((task, i) => {
-        const deadline = task.deadline ? new Date(task.deadline).toLocaleDateString() : '—';
+        const deadline = task.deadline ? new Date(task.deadline).toLocaleDateString('vi-VN') : '—';
         doc.fontSize(10).text(
           `${i + 1}. [${task.status}] ${task.title}  |  ${task.priority}  |  ${deadline}`,
           { indent: 10 },
@@ -158,14 +158,15 @@ export async function generateReport(userId: string, format: string) {
   const exporter = exporters[format] ?? exporters['json']!;
   return exporter.exportReport(userId);
 }
+
 class TagsCSVExporter extends ReportExporter {
   protected async collectData(userId: string) {
     return prisma.tag.findMany({
       where: { userId },
       include: {
         tasks: {
-          include: { task: { select: { title: true, status: true, priority: true } } }
-        }
+          include: { task: { select: { title: true, status: true, priority: true } } },
+        },
       },
     });
   }
@@ -177,22 +178,22 @@ class TagsCSVExporter extends ReportExporter {
       tasks: { task: { title: string; status: string; priority: string } }[];
     };
     const tags = data as TagRow[];
-    const header = 'Tag Name,Color,Task Title,Task Status,Task Priority';
+    const header = 'Tag Name;Color;Task Title;Task Status;Task Priority';
     const rows = tags.flatMap(tag =>
       tag.tasks.length > 0
         ? tag.tasks.map(t =>
-          `"${tag.name}","${tag.color}","${t.task.title}",${t.task.status},${t.task.priority}`
+          `${escapeCSV(tag.name)};${escapeCSV(tag.color)};${escapeCSV(t.task.title)};${escapeCSV(t.task.status)};${escapeCSV(t.task.priority)}`
         )
-        : [`"${tag.name}","${tag.color}",(no tasks),,`]
+        : [`${escapeCSV(tag.name)};${escapeCSV(tag.color)};${escapeCSV('(no tasks)')};;`]
     );
     return [header, ...rows].join('\n');
   }
 
   protected async generateFile(data: unknown): Promise<ReportResult> {
     return {
-      content: data as string,
+      content: '\uFEFF' + (data as string),
       filename: `tags-${Date.now()}.csv`,
-      contentType: 'text/csv',
+      contentType: 'text/csv; charset=utf-8',
     };
   }
 }
@@ -203,8 +204,8 @@ class TagsJSONExporter extends ReportExporter {
       where: { userId },
       include: {
         tasks: {
-          include: { task: { select: { title: true, status: true, priority: true, deadline: true } } }
-        }
+          include: { task: { select: { title: true, status: true, priority: true, deadline: true } } },
+        },
       },
     });
   }
@@ -240,18 +241,18 @@ class PomodoroCSVExporter extends ReportExporter {
       task: { title: string } | null;
     };
     const sessions = data as SessionRow[];
-    const header = 'Type,Duration (min),Task,Started At,Ended At';
+    const header = 'Type;Duration (min);Task;Started At;Ended At';
     const rows = sessions.map(s =>
-      `${s.type},${Math.floor(s.duration / 60)},"${s.task?.title ?? '—'}",${s.startedAt.toISOString()},${s.endedAt?.toISOString() ?? ''}`
+      `${escapeCSV(s.type)};${escapeCSV(String(Math.floor(s.duration / 60)))};${escapeCSV(s.task?.title ?? '�')};${escapeCSV(new Date(s.startedAt).toLocaleString('vi-VN'))};${escapeCSV(s.endedAt ? new Date(s.endedAt).toLocaleString('vi-VN') : '')}`
     );
     return [header, ...rows].join('\n');
   }
 
   protected async generateFile(data: unknown): Promise<ReportResult> {
     return {
-      content: data as string,
+      content: '\uFEFF' + (data as string),
       filename: `pomodoro-${Date.now()}.csv`,
-      contentType: 'text/csv',
+      contentType: 'text/csv; charset=utf-8',
     };
   }
 }

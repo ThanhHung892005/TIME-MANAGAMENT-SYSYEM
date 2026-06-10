@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { taskService } from '../services/taskService';
+import { logger } from '../utils/logger';
 
 // Runs every hour: marks TODO/IN_PROGRESS tasks past their deadline as OVERDUE.
 //
@@ -17,10 +18,10 @@ export function startAutoOverdueJob() {
     try {
       const count = await taskService.markOverdueTasks();
       if (count > 0) {
-        console.log(`[autoOverdue] Marked ${count} task(s) as OVERDUE`);
+        logger.info(`[autoOverdue] Marked ${count} task(s) as OVERDUE`);
       }
     } catch (err) {
-      console.error('[autoOverdue] Failed to mark overdue tasks:', err);
+      logger.error('[autoOverdue] Failed to mark overdue tasks:', err);
     }
   });
 }
