@@ -26,7 +26,7 @@ export function Login() {
   const handleLogin = async (data: FormValues) => {
     try {
       const result = await authService.login(data);
-      setAuth(result.user, result.token);
+      setAuth(result.user);
       navigate('/', { replace: true });
     } catch {
       toast.error('Invalid email or password');
@@ -64,6 +64,13 @@ export function Login() {
           Don't have an account?{' '}
           <Link to="/register" className="text-blue-600 hover:underline font-medium">
             Sign up
+          </Link>
+        </p>
+
+        <p className="text-center text-sm text-gray-500 mt-4">
+          Forgot your password?{' '}
+          <Link to="/forgot-password" className="text-blue-600 hover:underline font-medium">
+            Reset it
           </Link>
         </p>
       </div>

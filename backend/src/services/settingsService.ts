@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import bcrypt from 'bcryptjs';
 import { AppError } from '../types';
 import { prisma } from '../config/database';
 
@@ -49,7 +50,18 @@ class SettingsService {
     return { message: 'Settings updated successfully', settings: updatedUser };
   }
 
-  async deleteAccount(userId: string) {
+  async deleteAccount(userId: string, password?: string) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new AppError('User not found', 404);
+
+    if (user.password) {
+      if (!password) {
+        throw new AppError('Password is required to delete account', 400);
+      }
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) throw new AppError('Incorrect password', 401);
+    }
+
     await prisma.user.delete({ where: { id: userId } });
     return { message: 'Account deleted successfully' };
   }

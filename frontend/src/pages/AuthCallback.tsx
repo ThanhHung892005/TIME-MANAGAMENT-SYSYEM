@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useUserStore } from '@/store/userStore';
 import { authService } from '@/services/authService';
-// No setToken needed — axios interceptor reads token from localStorage directly
 
 export function AuthCallback() {
   const navigate = useNavigate();
@@ -11,22 +10,19 @@ export function AuthCallback() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const token = params.get('token');
     const error = params.get('error');
 
-    if (error || !token) {
+    if (error) {
       toast.error('Google sign-in failed. Please try again.');
       navigate('/login', { replace: true });
       return;
     }
 
-    // Persist token so the axios interceptor can attach it to the profile request
-    localStorage.setItem('token', token);
-
+    // Token is now in httpOnly cookie - just fetch profile
     authService
       .getProfile()
       .then((user) => {
-        setAuth(user, token);
+        setAuth(user);
         navigate('/', { replace: true });
       })
       .catch(() => {

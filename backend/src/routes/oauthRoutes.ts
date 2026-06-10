@@ -21,7 +21,14 @@ if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
     }),
     ((req: AuthRequest, res) => {
       const token = req.user ? signToken(req.user) : '';
-      res.redirect(`${env.FRONTEND_URL}/auth/callback?token=${encodeURIComponent(token)}`);
+      // Set httpOnly cookie instead of putting token in URL
+      res.cookie('token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+      res.redirect(`${env.FRONTEND_URL}/auth/callback`);
     }) as RequestHandler,
   );
 } else {

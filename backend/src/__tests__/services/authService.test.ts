@@ -51,11 +51,11 @@ describe('AuthService.register', () => {
   it('throws 409 if email already exists', async () => {
     mockFindUnique.mockResolvedValue(baseUser);
     await expect(
-      authService.register({ email: 'test@example.com', password: 'pass1234', name: 'Test' }),
+      authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test' }),
     ).rejects.toThrow(AppError);
 
     await expect(
-      authService.register({ email: 'test@example.com', password: 'pass1234', name: 'Test' }),
+      authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test' }),
     ).rejects.toMatchObject({ statusCode: 409 });
   });
 
@@ -64,7 +64,7 @@ describe('AuthService.register', () => {
     mockHash.mockResolvedValue('hashed-pw');
     mockCreate.mockResolvedValue(baseUser);
 
-    await authService.register({ email: 'test@example.com', password: 'pass1234', name: 'Test' });
+    await authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test' });
 
     expect(mockHash).toHaveBeenCalledWith('pass1234', 12);
   });
@@ -74,7 +74,7 @@ describe('AuthService.register', () => {
     mockHash.mockResolvedValue('hashed-pw');
     mockCreate.mockResolvedValue(baseUser);
 
-    const result = await authService.register({ email: 'test@example.com', password: 'pass1234', name: 'Test' });
+    const result = await authService.register({ email: 'test@example.com', password: 'pass1234', confirmPassword: 'pass1234', name: 'Test' });
 
     expect(result.token).toBe('mock-token');
     expect(result.user).toEqual(baseUser);
