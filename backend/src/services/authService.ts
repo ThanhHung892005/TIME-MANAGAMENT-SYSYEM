@@ -123,8 +123,8 @@ class AuthService {
     await prisma.oTP.delete({ where: { email: data.email } });
 
     const token = signToken({ userId: user.id, email: user.email });
-    const { password: _p, googleId: _g, ...safeUser } = user;
-    return { user: { ...safeUser, hasPassword: !!user.password }, token };
+    // select already excludes password/googleId; user was created with a password so hasPassword = true
+    return { user: { ...user, hasPassword: true }, token };
   }
 
   async login(data: LoginDTO) {
@@ -249,19 +249,18 @@ class AuthService {
     let user = await prisma.user.findUnique({ where: { googleId: profile.googleId } });
 
     if (!user) {
-      user = await prisma.user.findUnique({ where: { email: profile.email } });
-      if (user) {
+      const existingByEmail = await prisma.user.findUnique({ where: { email: profile.email } });
+      if (existingByEmail) {
         throw new AppError('Email đã được đăng ký bằng phương thức khác. Vui lòng đăng nhập bằng mật khẩu.', 409);
-      } else {
-        user = await prisma.user.create({
-          data: {
-            email: profile.email,
-            name: profile.name,
-            googleId: profile.googleId,
-            avatar: profile.avatar,
-          },
-        });
       }
+      user = await prisma.user.create({
+        data: {
+          email: profile.email,
+          name: profile.name,
+          googleId: profile.googleId,
+          avatar: profile.avatar,
+        },
+      });
     }
 
     const token = signToken({ userId: user.id, email: user.email });

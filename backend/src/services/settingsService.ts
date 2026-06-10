@@ -4,15 +4,12 @@ import { AppError } from '../types';
 import { prisma } from '../config/database';
 
 
+// Intl.supportedValuesOf is available in Node 20+ but not in TypeScript's default lib
+const validTimezones = new Set((Intl as any).supportedValuesOf('timeZone') as string[]);
+
 export const updateSettingsSchema = z.object({
   theme: z.enum(['light', 'dark']).optional(),
-  timezone: z.string().refine((val) => {
-    try {
-      return Intl.supportedValuesOf('timeZone').includes(val);
-    } catch {
-      return false;
-    }
-  }, 'Invalid IANA Timezone').optional(),
+  timezone: z.string().refine((tz) => validTimezones.has(tz), { message: 'Invalid IANA Timezone' }).optional(),
   pomodoroDuration: z.number().int().min(5).max(180).optional(),
   emailNotifications: z.boolean().optional(),
   pushNotifications: z.boolean().optional(),
