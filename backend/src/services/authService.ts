@@ -83,14 +83,15 @@ class AuthService {
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) throw new AppError('Email already in use', 409);
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otp = crypto.randomInt(100000, 1000000).toString();
+    const otpHash = crypto.createHash('sha256').update(otp).digest('hex');
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 mins
 
     // @ts-ignore - Prisma client typing might be slightly off without generate, but the model exists
     await prisma.oTP.upsert({
       where: { email },
-      update: { otp, expiresAt },
-      create: { email, otp, expiresAt },
+      update: { otp: otpHash, expiresAt },
+      create: { email, otp: otpHash, expiresAt },
     });
 
     try {
@@ -110,7 +111,8 @@ class AuthService {
     // @ts-ignore
     const otpRecord = await prisma.oTP.findUnique({ where: { email: data.email } });
     if (!otpRecord) throw new AppError('OTP not found or expired. Please request a new one.', 400);
-    if (otpRecord.otp !== data.otp) throw new AppError('Invalid OTP', 400);
+    const inputHash = crypto.createHash('sha256').update(data.otp).digest('hex');
+    if (otpRecord.otp !== inputHash) throw new AppError('Invalid OTP', 400);
     if (otpRecord.expiresAt < new Date()) throw new AppError('OTP expired. Please request a new one.', 400);
 
     const hashed = await bcrypt.hash(data.password, 12);
@@ -165,6 +167,9 @@ class AuthService {
   async forgotPassword(email: string) {
     const user = await prisma.user.findUnique({ where: { email } });
 
+    // Delay before branching so both paths take ~same time (prevents email enumeration via timing)
+    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 100));
+
     if (!user) return { message: 'If email exists, a reset link has been sent.' };
 
     const resetToken = crypto.randomBytes(32).toString('hex');
@@ -188,10 +193,6 @@ class AuthService {
       });
       throw new AppError('Failed to send reset email. Please try again later.', 500);
     }
-
-    // Add artificial delay to prevent timing-based email enumeration
-    // Both branches should take approximately the same time
-    await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 100));
 
     return { message: 'If email exists, a reset link has been sent.' };
   }
