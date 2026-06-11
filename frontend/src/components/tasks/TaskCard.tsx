@@ -31,9 +31,14 @@ export const TaskCard = React.memo(function TaskCard({ task }: TaskCardProps) {
 
   const handleComplete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    const newStatus = task.status === 'COMPLETED' ? 'TODO' : 'COMPLETED';
+    let newStatus: Task['status'];
+    if (task.status === 'COMPLETED') {
+      newStatus = isOverdue(task.deadline) ? 'OVERDUE' : 'TODO';
+    } else {
+      newStatus = 'COMPLETED';
+    }
     updateTask.mutate({ id: task.id, data: { status: newStatus } });
-  }, [task.id, task.status, updateTask]);
+  }, [task.id, task.status, task.deadline, updateTask]);
 
   const handleDelete = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();

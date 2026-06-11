@@ -14,7 +14,7 @@ import { logger } from '../utils/logger';
 //
 // Register the listener before calling startAutoOverdueJob() in server.ts.
 export function startAutoOverdueJob() {
-  cron.schedule('0 * * * *', async () => {
+  cron.schedule('*/15 * * * *', async () => {
     try {
       const count = await taskService.markOverdueTasks();
       if (count > 0) {
