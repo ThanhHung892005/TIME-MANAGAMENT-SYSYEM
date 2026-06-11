@@ -63,14 +63,14 @@ router.patch('/:id/read', authenticate, async (req: AuthRequest, res) => {
         }
         const id = req.params.id;
         const notification = await prisma.notification.findFirst({
-            where: { id, userId },
+            where: { id: id as string, userId: userId as string },
         });
         if (!notification) {
             res.status(404).json({ error: 'Notification not found' });
             return;
         }
         await prisma.notification.update({
-            where: { id },
+            where: { id: id as string },
             data: { isRead: true },
         });
         res.json({ success: true });
