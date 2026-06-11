@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { prisma } from '../config/database';
 import type { AuthRequest } from '../types';
-import { startOfDay, endOfDay, startOfWeek, subWeeks, eachDayOfInterval, subDays } from 'date-fns';
+import { startOfDay, endOfDay, startOfWeek, subWeeks, eachDayOfInterval, subDays, format } from 'date-fns';
 import { generateReport, exportTags as exportTagsReport, exportPomodoro as exportPomodoroReport } from '../services/reportService';
 
 export async function getSummary(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -55,14 +55,14 @@ export async function getCompletion(req: AuthRequest, res: Response, next: NextF
     // Group by date in memory
     const countMap: Record<string, number> = {};
     tasks.forEach(({ updatedAt }) => {
-      const key = updatedAt.toISOString().split('T')[0]!;
+      const key = format(updatedAt, 'yyyy-MM-dd');
       countMap[key] = (countMap[key] ?? 0) + 1;
     });
 
     const days = eachDayOfInterval({ start, end });
     const data = days.map(day => ({
-      date: day.toISOString().split('T')[0]!,
-      completed: countMap[day.toISOString().split('T')[0]!] ?? 0,
+      date: format(day, 'yyyy-MM-dd'),
+      completed: countMap[format(day, 'yyyy-MM-dd')] ?? 0,
     }));
 
     res.json(data);
@@ -105,7 +105,7 @@ export async function getHeatmap(req: AuthRequest, res: Response, next: NextFunc
 
     const counts: Record<string, number> = {};
     tasks.forEach(({ updatedAt }) => {
-      const key = updatedAt.toISOString().split('T')[0]!;
+      const key = format(updatedAt, 'yyyy-MM-dd');
       counts[key] = (counts[key] ?? 0) + 1;
     });
 
