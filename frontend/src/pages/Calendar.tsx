@@ -28,7 +28,7 @@ const DnDCalendar = withDragAndDrop<CalendarEvent>(BigCalendar);
 
 export function Calendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<View>('month');
+  const [view, setView] = useState<View>('week');
 
   const start = startOfMonth(currentDate);
   const end = endOfMonth(currentDate);
@@ -36,30 +36,52 @@ export function Calendar() {
   const { data: tasks = [] } = useCalendarTasks(start, end);
   const updateDeadline = useUpdateDeadline();
 
+  const clampToSameDay = (start: Date, end: Date): Date => {
+    const startOfEndDay = new Date(end);
+    startOfEndDay.setHours(0, 0, 0, 0);
+    return start < startOfEndDay ? startOfEndDay : start;
+  };
+
   const events = useMemo<CalendarEvent[]>(() =>
     tasks
       .filter((t) => t.deadline)
-      .map((task) => ({
-        id: task.id,
-        title: task.title,
-        start: new Date(task.deadline!),
-        end: new Date(task.deadline!),
-        resource: task,
-      })),
+      .map((task) => {
+        const end = new Date(task.deadline!);
+        const rawStart = task.startAt
+          ? new Date(task.startAt)
+          : new Date(end.getTime() - 60 * 60 * 1000);
+        const start = clampToSameDay(rawStart, end);
+        return { id: task.id, title: task.title, start, end, resource: task };
+      }),
     [tasks],
   );
 
   const handleEventDrop = ({ event, start }: EventInteractionArgs<CalendarEvent>) => {
+    const duration = event.end.getTime() - event.start.getTime();
+    const newStart = new Date(start as Date);
+    const newEnd = new Date(newStart.getTime() + duration);
+    // Prevent spanning into next day
+    const endOfDay = new Date(newStart);
+    endOfDay.setHours(23, 59, 0, 0);
+    const clampedEnd = newEnd > endOfDay ? endOfDay : newEnd;
     updateDeadline.mutate({
       id: event.id,
-      deadline: new Date(start as Date).toISOString(),
+      startAt: newStart.toISOString(),
+      deadline: clampedEnd.toISOString(),
     });
   };
 
-  const handleEventResize = ({ event, end }: EventInteractionArgs<CalendarEvent>) => {
+  const handleEventResize = ({ event, start, end }: EventInteractionArgs<CalendarEvent>) => {
+    const newStart = new Date(start as Date);
+    const newEnd = new Date(end as Date);
+    // Prevent spanning into next day
+    const endOfDay = new Date(newStart);
+    endOfDay.setHours(23, 59, 0, 0);
+    const clampedEnd = newEnd > endOfDay ? endOfDay : newEnd;
     updateDeadline.mutate({
       id: event.id,
-      deadline: new Date(end as Date).toISOString(),
+      startAt: newStart.toISOString(),
+      deadline: clampedEnd.toISOString(),
     });
   };
 

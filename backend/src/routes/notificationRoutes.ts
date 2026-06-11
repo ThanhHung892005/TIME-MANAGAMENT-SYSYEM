@@ -61,7 +61,7 @@ router.patch('/:id/read', authenticate, async (req: AuthRequest, res) => {
             res.status(401).json({ error: 'Unauthorized' });
             return;
         }
-        const id = req.params.id;
+        const id = String(req.params.id);
         const notification = await prisma.notification.findFirst({
             where: { id, userId },
         });

@@ -1,5 +1,5 @@
 import { prisma } from '../config/database';
-import { NotFoundError, ForbiddenError } from '../types';
+import { NotFoundError, ForbiddenError } from '../errors/AppError';
 
 class PomodoroService {
   async startSession(userId: string, data: { duration: number; type: string; taskId?: string }) {

@@ -1,77 +1,16 @@
 import bcrypt from 'bcryptjs';
-import { z } from 'zod';
 import { prisma } from '../config/database';
 import { signToken } from '../utils/jwt';
-import { AppError } from '../types';
+import { AppError } from '../errors/AppError';
 import crypto from 'crypto';
 import { sendPasswordResetEmail, sendOTPEmail } from './emailService';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
+import { passwordSchema } from '../validators/authValidator';
+import type { RegisterDTO, LoginDTO, UpdateProfileDTO } from '../validators/authValidator';
 
 // Constants
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
-
-// Shared password validation schema
-const passwordSchema = z.string()
-  .min(8, 'Password must be at least 8 characters')
-  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-  .regex(/[0-9]/, 'Password must contain at least one number')
-  .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
-
-export { passwordSchema };
-
-export const registerSchema = z.object({
-  email: z.preprocess(
-    (val) => typeof val === 'string' ? val.trim().toLowerCase() : val,
-    z.string().email('Invalid email format')
-  ),
-  password: passwordSchema,
-  confirmPassword: z.string().min(1, 'Please confirm your password'),
-  name: z.string().min(1).max(100),
-  otp: z.string().length(6, 'OTP must be 6 digits'),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
-
-export const sendRegisterOtpSchema = z.object({
-  email: z.preprocess(
-    (val) => typeof val === 'string' ? val.trim().toLowerCase() : val,
-    z.string().email('Invalid email format')
-  ),
-});
-
-export const loginSchema = z.object({
-  email: z.preprocess(
-    (val) => typeof val === 'string' ? val.trim().toLowerCase() : val,
-    z.string().email()
-  ),
-  password: z.string().min(1),
-});
-
-export const updateProfileSchema = z.object({
-  name: z.string().min(1).max(100).optional(),
-  avatar: z.string().url().optional(),
-});
-
-export const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email format'),
-});
-
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Token is required'),
-  newPassword: passwordSchema,
-});
-
-export const changePasswordSchema = z.object({
-  oldPassword: z.string().min(1, 'Current password is required'),
-  newPassword: passwordSchema,
-});
-
-export type RegisterDTO = z.infer<typeof registerSchema>;
-export type LoginDTO = z.infer<typeof loginSchema>;
-export type UpdateProfileDTO = z.infer<typeof updateProfileSchema>;
 
 const userSelectFields = {
   id: true, email: true, name: true, avatar: true, createdAt: true, password: true, googleId: true,

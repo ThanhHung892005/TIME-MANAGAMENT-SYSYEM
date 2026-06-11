@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { authService } from '../../services/authService';
 import { prisma } from '../../config/database';
 import { signToken } from '../../utils/jwt';
-import { AppError } from '../../types';
+import { AppError } from '../../errors/AppError';
 
 jest.mock('../../config/database', () => ({
   prisma: {

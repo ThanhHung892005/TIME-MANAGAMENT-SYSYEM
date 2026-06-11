@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import { AppError } from '../types';
+import { AppError } from '../errors/AppError';
 import { prisma } from '../config/database';
 
 

@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { verifyToken } from '../utils/jwt';
-import { UnauthorizedError } from '../types';
+import { UnauthorizedError } from '../errors/AppError';
 import { isTokenBlacklisted } from '../utils/tokenBlacklist';
 import type { AuthRequest } from '../types';
 

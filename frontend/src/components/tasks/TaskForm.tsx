@@ -17,7 +17,9 @@ const schema = z.object({
   description: z.string().max(2000).optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH']),
   status: z.enum(['TODO', 'IN_PROGRESS', 'COMPLETED', 'ARCHIVED']),
-  deadline: z.string().optional(),
+  date: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
   isRecurring: z.boolean().default(false),
   recurringType: z.enum(['DAILY', 'WEEKLY', 'MONTHLY']).optional(),
 });
@@ -29,7 +31,9 @@ const DEFAULT_VALUES: FormValues = {
   description: '',
   priority: 'MEDIUM',
   status: 'TODO',
-  deadline: '',
+  date: '',
+  startTime: '',
+  endTime: '',
   isRecurring: false,
   recurringType: undefined,
 };
@@ -66,7 +70,9 @@ export function TaskForm() {
         description: editingTask.description ?? '',
         priority: editingTask.priority,
         status: editingTask.status === 'OVERDUE' ? 'TODO' : editingTask.status,
-        deadline: editingTask.deadline ? editingTask.deadline.split('T')[0] : '',
+        date: editingTask.deadline ? editingTask.deadline.split('T')[0] : '',
+        startTime: editingTask.startAt ? editingTask.startAt.split('T')[1]?.substring(0, 5) : '',
+        endTime: editingTask.deadline ? editingTask.deadline.split('T')[1]?.substring(0, 5) : '',
         isRecurring: editingTask.isRecurring,
         recurringType: editingTask.recurringType ?? undefined,
       });
@@ -97,9 +103,18 @@ export function TaskForm() {
   };
 
   const onSubmit = async (data: FormValues) => {
+    const startAt = data.date && data.startTime
+      ? new Date(`${data.date}T${data.startTime}:00`).toISOString()
+      : undefined;
+    const deadline = data.date && data.endTime
+      ? new Date(`${data.date}T${data.endTime}:00`).toISOString()
+      : data.date
+        ? new Date(`${data.date}T23:59:00`).toISOString()
+        : undefined;
     const payload = {
       ...data,
-      deadline: data.deadline ? new Date(data.deadline).toISOString() : undefined,
+      startAt,
+      deadline,
       recurringType: data.isRecurring ? data.recurringType : undefined,
       tagIds: selectedTagIds,
     };
@@ -155,7 +170,29 @@ export function TaskForm() {
           </div>
         </div>
 
-        <Input label="Deadline" type="date" {...register('deadline')} />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Ngày &amp; Thời gian</label>
+          <input
+            type="date"
+            {...register('date')}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+          />
+          <div className="flex items-center gap-2 mt-1">
+            <input
+              type="time"
+              {...register('startTime')}
+              placeholder="Bắt đầu"
+              className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+            />
+            <span className="text-sm text-gray-400 shrink-0">→</span>
+            <input
+              type="time"
+              {...register('endTime')}
+              placeholder="Kết thúc"
+              className="flex-1 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100"
+            />
+          </div>
+        </div>
 
         {/* Recurring */}
         <div className="flex flex-col gap-2">

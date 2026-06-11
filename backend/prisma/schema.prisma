@@ -37,6 +37,7 @@ model Task {
   description   String?
   priority      Priority          @default(MEDIUM)
   status        Status            @default(TODO)
+  startAt       DateTime?
   deadline      DateTime?
   isRecurring   Boolean           @default(false)
   recurringType RecurringType?

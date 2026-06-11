@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { Priority, Status, RecurringType } from '@prisma/client';
 import { addDays, addWeeks, addMonths, startOfDay, endOfDay } from 'date-fns';
 import { prisma } from '../config/database';
-import { NotFoundError, ForbiddenError } from '../types';
+import { NotFoundError, ForbiddenError } from '../errors/AppError';
 import { taskEvents, TASK_EVENTS, type OverdueTaskPayload } from '../events/taskEvents';
 
 export const createTaskSchema = z.object({
@@ -10,6 +10,7 @@ export const createTaskSchema = z.object({
   description: z.string().max(2000).optional(),
   priority: z.nativeEnum(Priority).default(Priority.MEDIUM),
   status: z.nativeEnum(Status).default(Status.TODO),
+  startAt: z.string().datetime().optional().nullable(),
   deadline: z.string().datetime().optional().nullable(),
   tagIds: z.array(z.string()).optional(),
   type: z.enum(['personal', 'work', 'study', 'recurring']).optional(),
@@ -117,10 +118,11 @@ class TaskService {
   }
 
   async create(userId: string, data: CreateTaskDTO) {
-    const { tagIds, type: _type, deadline, ...rest } = data;
+    const { tagIds, type: _type, deadline, startAt, ...rest } = data;
     return prisma.task.create({
       data: {
         ...rest,
+        startAt: startAt ? new Date(startAt) : undefined,
         deadline: deadline ? new Date(deadline) : undefined,
         userId,
         tags: tagIds?.length
@@ -133,8 +135,9 @@ class TaskService {
 
   async update(id: string, userId: string, data: UpdateTaskDTO) {
     const existing = await this.getById(id, userId);
-    const { tagIds, deadline, ...rest } = data;
+    const { tagIds, deadline, startAt, ...rest } = data;
 
+    const resolvedStartAt = startAt !== undefined ? (startAt ? new Date(startAt) : null) : undefined;
     const resolvedDeadline = deadline !== undefined
       ? (deadline ? new Date(deadline) : null)
       : undefined;
@@ -181,6 +184,7 @@ class TaskService {
       where: { id },
       data: {
         ...rest,
+        ...(resolvedStartAt !== undefined && { startAt: resolvedStartAt }),
         deadline: resolvedDeadline,
         ...(nextDueAt && { nextDueAt }),
         ...(tagIds !== undefined && {

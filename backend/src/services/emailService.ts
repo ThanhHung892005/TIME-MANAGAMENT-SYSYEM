@@ -2,29 +2,25 @@ import nodemailer from 'nodemailer';
 import { env } from '../config/env';
 import { logger } from '../utils/logger';
 
-// Validate Gmail SMTP credentials
 if (!env.EMAIL_USER || !env.EMAIL_PASS) {
-    throw new Error(
-        'Gmail SMTP is not configured. ' +
-        'Please set EMAIL_USER (your@gmail.com) and EMAIL_PASS (app password) in your .env file. ' +
-        'Note: Use an App Password, not your regular Gmail password. ' +
-        'Get one at: https://myaccount.google.com/apppasswords'
-    );
+    logger.warn('Gmail SMTP not configured — email features disabled. Set EMAIL_USER and EMAIL_PASS in .env to enable.');
 }
 
-// Create Gmail SMTP transporter
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: env.EMAIL_USER.trim(),
-        pass: env.EMAIL_PASS.trim(),
-    },
-});
-
-logger.info('Email service initialized with Gmail SMTP', {
-    emailUser: env.EMAIL_USER,
-    nodeEnv: env.NODE_ENV,
-});
+function getTransporter() {
+    if (!env.EMAIL_USER || !env.EMAIL_PASS) {
+        throw new Error(
+            'Gmail SMTP is not configured. ' +
+            'Please set EMAIL_USER (your@gmail.com) and EMAIL_PASS (app password) in your .env file.'
+        );
+    }
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: env.EMAIL_USER.trim(),
+            pass: env.EMAIL_PASS.trim(),
+        },
+    });
+}
 
 function escapeHtml(str: string): string {
     return str
@@ -42,7 +38,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
     }
 
     try {
-        const info = await transporter.sendMail({
+        const info = await getTransporter().sendMail({
             from: `"Time Management System" <${env.EMAIL_USER}>`,
             to,
             subject: '[Time Management] Yêu cầu đặt lại mật khẩu',
@@ -77,7 +73,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
 
 export async function sendOTPEmail(email: string, otp: string): Promise<void> {
     try {
-        const info = await transporter.sendMail({
+        const info = await getTransporter().sendMail({
             from: `"Time Management" <${env.EMAIL_USER}>`,
             to: email,
             subject: 'Mã OTP đăng ký tài khoản',
@@ -110,7 +106,7 @@ export async function sendReminderEmail(
     const safeDueDate = escapeHtml(dueDate.toLocaleString('vi-VN'));
 
     try {
-        const info = await transporter.sendMail({
+        const info = await getTransporter().sendMail({
             from: `"Time Management" <${env.EMAIL_USER}>`,
             to: email,
             subject: isSoon ? `⏰ Sắp deadline: ${taskTitle}` : `🚨 Quá hạn: ${taskTitle}`,

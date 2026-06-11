@@ -18,8 +18,8 @@ export function useCalendarTasks(start: Date, end: Date) {
 export function useUpdateDeadline() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, deadline }: { id: string; deadline: string | null }) =>
-      api.patch(`/calendar/tasks/${id}/deadline`, { deadline }),
+    mutationFn: ({ id, deadline, startAt }: { id: string; deadline: string | null; startAt?: string | null }) =>
+      api.patch(`/calendar/tasks/${id}/deadline`, { deadline, startAt }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
       qc.invalidateQueries({ queryKey: ['calendar'] });

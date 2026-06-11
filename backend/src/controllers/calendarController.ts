@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { prisma } from '../config/database';
-import { NotFoundError, ForbiddenError } from '../types';
+import { NotFoundError, ForbiddenError } from '../errors/AppError';
 import type { AuthRequest } from '../types';
 
 export async function getCalendarTasks(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
@@ -27,7 +27,10 @@ export async function getCalendarTasks(req: AuthRequest, res: Response, next: Ne
 
 export async function updateDeadline(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { deadline } = z.object({ deadline: z.string().datetime().nullable() }).parse(req.body);
+    const { deadline, startAt } = z.object({
+      deadline: z.string().datetime().nullable(),
+      startAt: z.string().datetime().nullable().optional(),
+    }).parse(req.body);
 
     const task = await prisma.task.findUnique({ where: { id: req.params['id'] as string } });
     if (!task) throw new NotFoundError('Task not found');
@@ -35,7 +38,10 @@ export async function updateDeadline(req: AuthRequest, res: Response, next: Next
 
     const updated = await prisma.task.update({
       where: { id: req.params['id'] as string },
-      data: { deadline: deadline ? new Date(deadline) : null },
+      data: {
+        deadline: deadline ? new Date(deadline) : null,
+        ...(startAt !== undefined && { startAt: startAt ? new Date(startAt) : null }),
+      },
     });
     res.json(updated);
   } catch (err) {

@@ -32,6 +32,7 @@ export interface Task {
   description: string | null;
   priority: Priority;
   status: Status;
+  startAt: string | null;
   deadline: string | null;
   isRecurring: boolean;
   recurringType: RecurringType | null;
@@ -60,6 +61,7 @@ export interface CreateTaskDTO {
   description?: string;
   priority?: Priority;
   status?: Status;
+  startAt?: string | null;
   deadline?: string | null;
   tagIds?: string[];
   isRecurring?: boolean;
