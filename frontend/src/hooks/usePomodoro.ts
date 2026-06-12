@@ -16,6 +16,12 @@ export function usePomodoro(linkedTaskId?: string) {
     ? pomodoro.workMinutes * 60
     : pomodoro.breakMinutes * 60;
 
+  useEffect(() => {
+    if (!isRunning) {
+      setSecondsLeft(totalSeconds);
+    }
+  }, [isRunning, totalSeconds]);
+
   const playBeep = useCallback(() => {
     const ctx = new AudioContext();
     const osc = ctx.createOscillator();

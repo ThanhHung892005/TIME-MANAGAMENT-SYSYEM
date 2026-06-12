@@ -38,8 +38,8 @@ app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/test-notifications', authenticate, async (req, res, next) => {
   try {
-    await checkAndCreateNotifications(req.user!.userId);
-    res.json({ message: 'Done' });
+    const result = await checkAndCreateNotifications(req.user!.userId);
+    res.json({ message: 'Done', result });
   } catch (err) {
     next(err);
   }
