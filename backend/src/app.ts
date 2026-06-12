@@ -17,6 +17,7 @@ import settingsRoutes from './routes/settingsRoutes';
 
 const app = express();
 
+app.set('trust proxy', 1);
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());

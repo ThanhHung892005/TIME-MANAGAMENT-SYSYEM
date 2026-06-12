@@ -53,9 +53,8 @@ router.post('/reset-password', authLimiter, validate(resetPasswordSchema), reset
 router.post('/logout', logout);
 
 // need login
-router.use(authenticate);
-router.get('/me', getProfile);
-router.patch('/me', validate(updateProfileSchema), updateProfile);
-router.post('/change-password', validate(changePasswordSchema), changePassword);
+router.get('/me', authenticate, getProfile);
+router.patch('/me', authenticate, validate(updateProfileSchema), updateProfile);
+router.post('/change-password', authenticate, validate(changePasswordSchema), changePassword);
 
 export default router;

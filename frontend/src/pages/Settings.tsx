@@ -241,7 +241,7 @@ export function Settings() {
               className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               <option value="UTC">UTC</option>
-              <option value="Asia/Ho_Chi_Minh">Asia/Ho Chi Minh (GMT+7)</option>
+              <option value="Asia/Saigon">Asia/Ho Chi Minh (GMT+7)</option>
               <option value="Asia/Tokyo">Asia/Tokyo (GMT+9)</option>
               <option value="America/New_York">America/New York (GMT-5)</option>
               <option value="Europe/London">Europe/London (GMT+0)</option>
