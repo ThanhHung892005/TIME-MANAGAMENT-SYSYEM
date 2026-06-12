@@ -7,6 +7,7 @@ import { loginLimiter, sendOtpLimiter, registerLimiter, authLimiter } from '../m
 
 const router = Router();
 
+
 // dont need login
 router.get('/test', (req, res) => { res.send('OK'); });
 router.post('/send-register-otp', sendOtpLimiter, validate(sendRegisterOtpSchema), sendRegisterOtp);

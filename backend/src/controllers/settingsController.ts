@@ -24,6 +24,12 @@ export async function deleteAccount(req: AuthRequest, res: Response, next: NextF
   try {
     const { password } = req.body;
     const result = await settingsService.deleteAccount(req.user!.userId, password);
+    // Clear auth cookie immediately — don't rely solely on the subsequent /auth/logout call
+    res.clearCookie('token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
     res.json(result);
   } catch (err) {
     next(err);

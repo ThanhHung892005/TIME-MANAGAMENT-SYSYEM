@@ -1,5 +1,7 @@
 import { rateLimit } from 'express-rate-limit';
 
+const isDev = process.env.NODE_ENV === 'development';
+
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
@@ -10,16 +12,16 @@ export const loginLimiter = rateLimit({
 
 export const sendOtpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 3,
-  message: 'Quá nhiều yêu cầu gửi mã OTP. Vui lòng thử lại sau 1 giờ.',
+  max: isDev ? 100 : 3,
+  message: { error: 'Too many OTP requests. Please try again after 1 hour.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 export const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 15,
-  message: 'Quá nhiều lần nhập sai. Vui lòng thử lại sau 1 giờ.',
+  max: isDev ? 100 : 15,
+  message: 'Too many attempts. Please try again after 1 hour.',
   standardHeaders: true,
   legacyHeaders: false,
 });
