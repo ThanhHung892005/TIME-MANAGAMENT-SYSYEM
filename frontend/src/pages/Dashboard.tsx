@@ -48,7 +48,8 @@ export function Dashboard() {
                       <span className="text-sm text-gray-700 dark:text-gray-300">{task.title}</span>
                     </div>
                     <span className={`text-xs font-medium ${getDeadlineColor(task.deadline)}`}>
-                      {formatDate(task.deadline)}
+                      {task.startAt && <>{formatDate(task.startAt, 'HH:mm')} → </>}
+                      {formatDate(task.deadline, 'HH:mm')} · {formatDate(task.deadline, 'MMM d, yyyy')}
                     </span>
                   </div>
                 ))}

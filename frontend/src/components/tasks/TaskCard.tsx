@@ -110,7 +110,10 @@ export const TaskCard = React.memo(function TaskCard({ task }: TaskCardProps) {
             {task.deadline && (
               <span className={`flex items-center gap-1 text-xs ${getDeadlineColor(task.deadline)} ${isOverdue(task.deadline) ? 'font-medium' : ''}`}>
                 <Calendar className="w-3 h-3" />
-                {formatDate(task.deadline)}
+                {task.startAt && (
+                  <>{formatDate(task.startAt, 'HH:mm')} → </>
+                )}
+                {formatDate(task.deadline, 'HH:mm')} · {formatDate(task.deadline, 'MMM d, yyyy')}
               </span>
             )}
             {task.subtasks.length > 0 && (

@@ -69,7 +69,7 @@ class SettingsService {
         throw new AppError('Password is required to delete account', 400);
       }
       const valid = await bcrypt.compare(password, user.password);
-      if (!valid) throw new AppError('Incorrect password', 401);
+      if (!valid) throw new AppError('Incorrect password', 400);
     }
 
     await prisma.user.delete({ where: { id: userId } });

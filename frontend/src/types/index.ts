@@ -80,6 +80,7 @@ export interface AnalyticsSummary {
     id: string;
     title: string;
     deadline: string;
+    startAt: string | null;
     priority: Priority;
   }>;
   totalSessions: number;

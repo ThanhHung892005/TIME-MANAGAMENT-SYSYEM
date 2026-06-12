@@ -24,7 +24,7 @@ export async function getSummary(req: AuthRequest, res: Response, next: NextFunc
         },
         orderBy: { deadline: 'asc' },
         take: 5,
-        select: { id: true, title: true, deadline: true, priority: true },
+        select: { id: true, title: true, deadline: true, priority: true, startAt: true },
       }),
       prisma.pomodoroSession.count({ where: { userId, type: 'work', endedAt: { not: null } } }),
       prisma.task.count({ where: { userId, status: 'OVERDUE' } }),
