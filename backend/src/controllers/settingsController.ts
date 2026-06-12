@@ -22,7 +22,7 @@ export async function updateSettings(req: AuthRequest, res: Response, next: Next
 
 export async function deleteAccount(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
   try {
-    const { password } = req.body;
+    const password = req.body?.password;
     const result = await settingsService.deleteAccount(req.user!.userId, password);
     res.json(result);
   } catch (err) {

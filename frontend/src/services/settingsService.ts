@@ -19,9 +19,10 @@ class SettingsService {
     return res.data;
   }
 
-  async deleteAccount(password?: string): Promise<{ message: string }> {
+  async deleteAccount(password: string): Promise<{ message: string }> {
     const res = await api.delete<{ message: string }>('/settings/account', {
-      data: password ? { password } : undefined
+      data: { password },
+      headers: { 'Content-Type': 'application/json' }
     });
     return res.data;
   }

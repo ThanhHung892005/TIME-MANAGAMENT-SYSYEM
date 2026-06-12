@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticate } from '../middlewares/auth';
 import { validate } from '../middlewares/validation';
-import { updateSettingsSchema } from '../services/settingsService';
+import { updateSettingsSchema } from '../validators/settingsValidator';
 import { getSettings, updateSettings, deleteAccount } from '../controllers/settingsController';
 
 const router = Router();
