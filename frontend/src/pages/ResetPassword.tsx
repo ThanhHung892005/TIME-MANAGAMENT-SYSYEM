@@ -15,17 +15,17 @@ export function ResetPassword() {
 
   useEffect(() => {
     if (!token) {
-      toast.error('Invalid reset link');
+      toast.error('Invalid or expired reset link.');
       navigate('/forgot-password');
     }
   }, [token, navigate]);
 
   const passwordRequirements = [
-    { test: (p: string) => p.length >= 8, label: 'Ít nhất 8 ký tự' },
-    { test: (p: string) => /[A-Z]/.test(p), label: 'Ít nhất 1 chữ hoa' },
-    { test: (p: string) => /[a-z]/.test(p), label: 'Ít nhất 1 chữ thường' },
-    { test: (p: string) => /[0-9]/.test(p), label: 'Ít nhất 1 số' },
-    { test: (p: string) => /[^A-Za-z0-9]/.test(p), label: 'Ít nhất 1 ký tự đặc biệt' },
+    { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
+    { test: (p: string) => /[A-Z]/.test(p), label: 'At least 1 uppercase letter' },
+    { test: (p: string) => /[a-z]/.test(p), label: 'At least 1 lowercase letter' },
+    { test: (p: string) => /[0-9]/.test(p), label: 'At least 1 number' },
+    { test: (p: string) => /[^A-Za-z0-9]/.test(p), label: 'At least 1 special character' },
   ];
 
   const isPasswordValid = (p: string) => passwordRequirements.every(req => req.test(p));
@@ -34,12 +34,12 @@ export function ResetPassword() {
     e.preventDefault();
 
     if (!isPasswordValid(password)) {
-      toast.error('Mật khẩu không đáp ứng yêu cầu');
+      toast.error('Password does not meet the requirements.');
       return;
     }
 
     if (password !== confirmPassword) {
-      toast.error('Mật khẩu xác nhận không khớp');
+      toast.error('Passwords do not match.');
       return;
     }
 
@@ -47,10 +47,10 @@ export function ResetPassword() {
 
     try {
       await authService.resetPassword(token!, password);
-      toast.success('Đặt lại mật khẩu thành công!');
+      toast.success('Password reset successfully!');
       navigate('/login');
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Failed to reset password');
+      toast.error(error.response?.data?.error || 'Failed to reset password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -64,16 +64,16 @@ export function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950 px-4">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Đặt lại mật khẩu</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Reset Password</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Nhập mật khẩu mới cho tài khoản của bạn
+            Enter a new password for your account
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Mật khẩu mới
+              New Password
             </label>
             <div className="relative">
               <input
@@ -129,7 +129,7 @@ export function ResetPassword() {
 
           <div>
             <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Xác nhận mật khẩu mới
+              Confirm New Password
             </label>
             <input
               type={showPassword ? 'text' : 'password'}
@@ -140,7 +140,7 @@ export function ResetPassword() {
               className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             {confirmPassword && password !== confirmPassword && (
-              <p className="mt-1 text-xs text-red-500">Mật khẩu không khớp</p>
+              <p className="mt-1 text-xs text-red-500">Passwords do not match</p>
             )}
           </div>
 
@@ -149,7 +149,7 @@ export function ResetPassword() {
             disabled={isLoading || !isPasswordValid(password) || password !== confirmPassword}
             className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors"
           >
-            {isLoading ? 'Đang xử lý...' : 'Đặt lại mật khẩu'}
+            {isLoading ? 'Processing...' : 'Reset Password'}
           </button>
         </form>
 
@@ -158,7 +158,7 @@ export function ResetPassword() {
             to="/login"
             className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           >
-            Quay lại đăng nhập
+            Back to Sign In
           </Link>
         </div>
       </div>
