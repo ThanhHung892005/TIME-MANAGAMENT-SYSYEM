@@ -22,8 +22,12 @@ export const registerSchema = z.object({
     z.string().email('Invalid email format')
   ),
   password: passwordSchema,
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
   name: z.string().min(1).max(100),
   otp: z.string().length(6, 'OTP must be 6 digits'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: 'Passwords do not match',
+  path: ['confirmPassword'],
 });
 
 export const loginSchema = z.object({
