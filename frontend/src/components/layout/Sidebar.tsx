@@ -4,7 +4,7 @@ import { LayoutDashboard, CheckSquare, Calendar, Timer, BarChart2, Settings, Log
 import { useUserStore } from '@/store/userStore';
 
 const NAV_ITEMS = [
-  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/tasks', label: 'Tasks', icon: CheckSquare },
   { to: '/calendar', label: 'Calendar', icon: Calendar },
   { to: '/pomodoro', label: 'Pomodoro', icon: Timer },

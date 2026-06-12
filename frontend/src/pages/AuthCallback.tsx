@@ -23,7 +23,7 @@ export function AuthCallback() {
       .getProfile()
       .then((user) => {
         setAuth(user);
-        navigate('/', { replace: true });
+        navigate('/dashboard', { replace: true });
       })
       .catch(() => {
         toast.error('Could not load profile. Please sign in again.');
