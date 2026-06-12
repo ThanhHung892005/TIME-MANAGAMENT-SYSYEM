@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { queryClient } from '@/lib/queryClient';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/ui/ProtectedRoute';
+import { LandingPage } from '@/pages/LandingPage';
 import { Login } from '@/pages/Login';
 import { Register } from '@/pages/Register';
 import { AuthCallback } from '@/pages/AuthCallback';
@@ -21,6 +22,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -33,7 +35,7 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<Dashboard />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/pomodoro" element={<Pomodoro />} />

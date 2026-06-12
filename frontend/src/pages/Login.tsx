@@ -27,7 +27,7 @@ export function Login() {
     try {
       const result = await authService.login(data);
       setAuth(result.user);
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch {
       toast.error('Invalid email or password');
     }
