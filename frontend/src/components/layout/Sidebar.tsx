@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { LayoutDashboard, CheckSquare, Calendar, Timer, BarChart2, Settings, LogOut } from 'lucide-react';
-import { ThemeToggle } from '@/components/ui/ThemeToggle';
+
 import { useUserStore } from '@/store/userStore';
 
 const NAV_ITEMS = [
@@ -42,9 +42,8 @@ export function Sidebar() {
       </nav>
 
       <div className="px-3 py-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-        <div className="flex items-center justify-between px-3">
+        <div className="flex items-center px-3">
           <span className="text-sm text-gray-600 dark:text-gray-400 truncate">{user?.name}</span>
-          <ThemeToggle />
         </div>
         <button
           onClick={logout}

@@ -15,11 +15,11 @@ const schema = z.object({
   name: z.string().min(1, 'Name is required').max(100),
   email: z.string().email('Invalid email'),
   password: z.string()
-    .min(8, 'Ít nhất 8 ký tự')
-    .regex(/[A-Z]/, 'Ít nhất 1 chữ hoa')
-    .regex(/[a-z]/, 'Ít nhất 1 chữ thường')
-    .regex(/[0-9]/, 'Ít nhất 1 số')
-    .regex(/[^A-Za-z0-9]/, 'Ít nhất 1 ký tự đặc biệt'),
+    .min(8, 'At least 8 characters')
+    .regex(/[A-Z]/, 'At least 1 uppercase letter')
+    .regex(/[a-z]/, 'At least 1 lowercase letter')
+    .regex(/[0-9]/, 'At least 1 number')
+    .regex(/[^A-Za-z0-9]/, 'At least 1 special character'),
   confirmPassword: z.string().min(1, 'Please confirm your password'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
@@ -42,11 +42,11 @@ export function Register() {
   const [showPassword, setShowPassword] = useState(false);
 
   const passwordRequirements = [
-    { test: (p: string) => p.length >= 8, label: 'Ít nhất 8 ký tự' },
-    { test: (p: string) => /[A-Z]/.test(p), label: 'Ít nhất 1 chữ hoa' },
-    { test: (p: string) => /[a-z]/.test(p), label: 'Ít nhất 1 chữ thường' },
-    { test: (p: string) => /[0-9]/.test(p), label: 'Ít nhất 1 số' },
-    { test: (p: string) => /[^A-Za-z0-9]/.test(p), label: 'Ít nhất 1 ký tự đặc biệt' },
+    { test: (p: string) => p.length >= 8, label: 'At least 8 characters' },
+    { test: (p: string) => /[A-Z]/.test(p), label: 'At least 1 uppercase letter' },
+    { test: (p: string) => /[a-z]/.test(p), label: 'At least 1 lowercase letter' },
+    { test: (p: string) => /[0-9]/.test(p), label: 'At least 1 number' },
+    { test: (p: string) => /[^A-Za-z0-9]/.test(p), label: 'At least 1 special character' },
   ];
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<FormValues>({
@@ -66,9 +66,10 @@ export function Register() {
       await authService.sendRegisterOtp(data.email);
       setFormData(data);
       setStep(2);
-      toast.success('OTP đã được gửi đến email của bạn!');
+      toast.success('OTP has been sent to your email!');
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Gửi OTP thất bại. Email có thể đã được sử dụng.');
+      const msg = error.response?.data?.error || error.response?.data;
+      toast.error(typeof msg === 'string' ? msg : 'Failed to send OTP. Please try again.');
     } finally {
       setIsSendingOtp(false);
     }
@@ -84,7 +85,7 @@ export function Register() {
       setAuth(result.user);
       setStep(3);
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Mã OTP không hợp lệ hoặc đã hết hạn.');
+      toast.error(error.response?.data?.error || 'Invalid or expired OTP code.');
     }
   };
 
@@ -100,20 +101,20 @@ export function Register() {
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              Đăng ký thành công!
+              Registration Successful!
             </h1>
             <p className="text-sm text-gray-500 mb-6">
-              Tài khoản của bạn đã được tạo. Bây giờ bạn có thể đăng nhập.
+              Your account has been created. You can now sign in.
             </p>
             <Button
               onClick={() => navigate('/login')}
               className="w-full"
             >
-              Đăng nhập
+              Sign In
             </Button>
             <p className="text-center text-sm text-gray-500 mt-4">
               <Link to="/register" className="text-blue-600 hover:underline">
-                Quay lại đăng ký
+                Back to Register
               </Link>
             </p>
           </div>
@@ -121,21 +122,21 @@ export function Register() {
           <>
             <div className="mb-8 text-center">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {step === 1 ? 'Tạo tài khoản' : 'Xác thực email'}
+                {step === 1 ? 'Create Account' : 'Verify Email'}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
-                {step === 1 ? 'Bắt đầu quản lý thời gian ngay hôm nay' : 'Nhập mã 6 chữ số đã gửi đến email của bạn'}
+                {step === 1 ? 'Start managing your time today' : 'Enter the 6-digit code sent to your email'}
               </p>
             </div>
 
             {step === 1 ? (
               <form onSubmit={handleSubmit(handleSendOtp)} className="space-y-4">
-                <Input label="Tên" error={errors.name?.message} {...register('name')} />
+                <Input label="Name" error={errors.name?.message} {...register('name')} />
                 <Input label="Email" type="email" error={errors.email?.message} {...register('email')} />
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Mật khẩu
+                    Password
                   </label>
                   <div className="relative">
                     <input
@@ -187,21 +188,21 @@ export function Register() {
                   )}
                 </div>
 
-                <Input label="Xác nhận mật khẩu" type="password" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
+                <Input label="Confirm Password" type="password" error={errors.confirmPassword?.message} {...register('confirmPassword')} />
                 <Button type="submit" isLoading={isSendingOtp} className="w-full mt-2">
-                  Tiếp tục
+                  Continue
                 </Button>
               </form>
             ) : (
               <form onSubmit={handleOtpSubmit(handleRegister)} className="space-y-4">
                 <Input
-                  label="Mã OTP"
+                  label="OTP Code"
                   placeholder="123456"
                   error={otpErrors.otp?.message}
                   {...registerOtp('otp')}
                 />
                 <Button type="submit" isLoading={isVerifying} className="w-full mt-2">
-                  Xác thực & Đăng ký
+                  Verify & Register
                 </Button>
                 <div className="text-center mt-4">
                   <button
@@ -209,7 +210,7 @@ export function Register() {
                     onClick={() => setStep(1)}
                     className="text-sm text-blue-600 hover:underline"
                   >
-                    Quay lại
+                    Back
                   </button>
                 </div>
               </form>
@@ -222,16 +223,16 @@ export function Register() {
                     <span className="w-full border-t border-gray-200 dark:border-gray-700" />
                   </div>
                   <div className="relative flex justify-center text-xs text-gray-400 uppercase tracking-wide">
-                    <span className="bg-white dark:bg-gray-900 px-2">hoặc</span>
+                    <span className="bg-white dark:bg-gray-900 px-2">or</span>
                   </div>
                 </div>
 
-                <GoogleSignInButton label="Đăng ký với Google" />
+                <GoogleSignInButton label="Sign up with Google" />
 
                 <p className="text-center text-sm text-gray-500 mt-6">
-                  Đã có tài khoản?{' '}
+                  Already have an account?{' '}
                   <Link to="/login" className="text-blue-600 hover:underline font-medium">
-                    Đăng nhập
+                    Sign In
                   </Link>
                 </p>
               </>

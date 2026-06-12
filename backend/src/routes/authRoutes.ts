@@ -16,11 +16,13 @@ const loginLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+const isDev = process.env.NODE_ENV === 'development';
+
 // Strict rate limiter for sending OTP - prevent email spam
 const sendOtpLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 3, // limit each IP to 3 OTP requests per hour
-  message: 'Quá nhiều yêu cầu gửi mã OTP. Vui lòng thử lại sau 1 giờ.',
+  max: isDev ? 100 : 3,
+  message: { error: 'Quá nhiều yêu cầu gửi mã OTP. Vui lòng thử lại sau 1 giờ.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -28,7 +30,7 @@ const sendOtpLimiter = rateLimit({
 // Moderate rate limiter for register - allow multiple typing attempts
 const registerLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 15, // limit each IP to 15 registration/verification attempts per hour
+  max: isDev ? 100 : 15,
   message: 'Quá nhiều lần nhập sai. Vui lòng thử lại sau 1 giờ.',
   standardHeaders: true,
   legacyHeaders: false,
