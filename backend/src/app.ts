@@ -20,7 +20,6 @@ import { checkAndCreateNotifications } from './services/notificationService';
 
 const app = express();
 
-app.set('trust proxy', 1);
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -39,8 +38,8 @@ app.use('/api/notifications', notificationRoutes);
 
 app.get('/api/test-notifications', authenticate, async (req, res, next) => {
   try {
-    await checkAndCreateNotifications(req.user!.userId);
-    res.json({ message: 'Done' });
+    const result = await checkAndCreateNotifications(req.user!.userId);
+    res.json({ message: 'Done', result });
   } catch (err) {
     next(err);
   }

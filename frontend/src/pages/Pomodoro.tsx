@@ -8,6 +8,14 @@ import { useQuery } from '@tanstack/react-query';
 import { pomodoroService } from '@/services/pomodoroService';
 import { formatRelative } from '@/utils/dateHelpers';
 
+const POMODORO_MODES = {
+  standard: { label: 'Standard', workMinutes: 25, breakMinutes: 5 },
+  long: { label: 'Long', workMinutes: 50, breakMinutes: 10 },
+  custom: { label: 'Custom' },
+} as const;
+
+type PomodoroMode = keyof typeof POMODORO_MODES;
+
 export function Pomodoro() {
   const [linkedTaskId, setLinkedTaskId] = useState<string | undefined>();
   const { pomodoro, setPomodoroSettings } = useSettingsStore();
@@ -22,6 +30,10 @@ export function Pomodoro() {
   const radius = 90;
   const circumference = 2 * Math.PI * radius;
   const dashOffset = circumference * (1 - progress);
+  const updateCustomMinutes = (field: 'workMinutes' | 'breakMinutes', value: string) => {
+    const minutes = Math.min(180, Math.max(1, Number(value) || 1));
+    setPomodoroSettings({ mode: 'custom', [field]: minutes });
+  };
 
   return (
     <div className="p-8 max-w-2xl">
@@ -29,16 +41,53 @@ export function Pomodoro() {
 
       <div className="flex flex-col items-center mb-8">
         <div className="flex gap-2 mb-6">
-          {(['standard', 'long'] as const).map((mode) => (
+          {(Object.keys(POMODORO_MODES) as PomodoroMode[]).map((mode) => (
             <button
               key={mode}
-              onClick={() => setPomodoroSettings({ mode, ...{ standard: { workMinutes: 25, breakMinutes: 5 }, long: { workMinutes: 50, breakMinutes: 10 } }[mode] })}
+              onClick={() => {
+                const preset = POMODORO_MODES[mode];
+                setPomodoroSettings(
+                  mode === 'custom'
+                    ? { mode }
+                    : { mode, workMinutes: preset.workMinutes, breakMinutes: preset.breakMinutes },
+                );
+              }}
+              disabled={isRunning}
               className={`px-4 py-1.5 rounded-full text-sm font-medium capitalize transition-colors ${pomodoro.mode === mode ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300'}`}
             >
-              {mode}
+              {POMODORO_MODES[mode].label}
             </button>
           ))}
         </div>
+
+        {pomodoro.mode === 'custom' && (
+          <div className="grid grid-cols-2 gap-3 w-full max-w-xs mb-6">
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+              Work minutes
+              <input
+                type="number"
+                min={1}
+                max={180}
+                value={pomodoro.workMinutes}
+                onChange={(e) => updateCustomMinutes('workMinutes', e.target.value)}
+                disabled={isRunning}
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              />
+            </label>
+            <label className="text-xs font-medium text-gray-600 dark:text-gray-300">
+              Break minutes
+              <input
+                type="number"
+                min={1}
+                max={180}
+                value={pomodoro.breakMinutes}
+                onChange={(e) => updateCustomMinutes('breakMinutes', e.target.value)}
+                disabled={isRunning}
+                className="mt-1 w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+              />
+            </label>
+          </div>
+        )}
 
         <div className="relative w-52 h-52">
           <svg className="w-full h-full -rotate-90" viewBox="0 0 200 200">

@@ -5,9 +5,22 @@ import { logger } from '../utils/logger';
 const DEFAULT_REMINDER_HOURS = 24;
 const BATCH_SIZE = 100;
 
+type NotificationCheckResult = {
+    checkedTasks: number;
+    createdNotifications: number;
+    sentEmails: number;
+    failedEmails: number;
+};
+
 export const checkAndCreateNotifications = async (userId?: string) => {
     const now = new Date();
     let skip = 0;
+    const result: NotificationCheckResult = {
+        checkedTasks: 0,
+        createdNotifications: 0,
+        sentEmails: 0,
+        failedEmails: 0,
+    };
 
     while (true) {
         const users = await prisma.user.findMany({
@@ -31,6 +44,7 @@ export const checkAndCreateNotifications = async (userId?: string) => {
 
             for (const task of user.tasks) {
                 if (!task.deadline) continue;
+                result.checkedTasks += 1;
 
                 const due = new Date(task.deadline);
                 const diffMs = due.getTime() - now.getTime();
@@ -57,8 +71,15 @@ export const checkAndCreateNotifications = async (userId?: string) => {
                             message: `Task "${task.title}" was due on ${due.toLocaleString('vi-VN')}.`,
                         },
                     });
-                    await sendReminderEmail(user.email, 'overdue', task.title, due)
-                        .catch(err => logger.error('Email error:', err));
+                    result.createdNotifications += 1;
+                    if (user.emailNotifications) {
+                        await sendReminderEmail(user.email, 'overdue', task.title, due)
+                            .then(() => { result.sentEmails += 1; })
+                            .catch(err => {
+                                result.failedEmails += 1;
+                                logger.error('Email error:', err);
+                            });
+                    }
 
                 } else if (diffMs <= reminderMs) {
                     const hoursLeft = Math.round(diffMs / (1000 * 60 * 60));
@@ -71,8 +92,15 @@ export const checkAndCreateNotifications = async (userId?: string) => {
                             message: `Task "${task.title}" is due in ${hoursLeft} hour(s).`,
                         },
                     });
-                    await sendReminderEmail(user.email, 'soon', task.title, due)
-                        .catch(err => logger.error('Email error:', err));
+                    result.createdNotifications += 1;
+                    if (user.emailNotifications) {
+                        await sendReminderEmail(user.email, 'soon', task.title, due)
+                            .then(() => { result.sentEmails += 1; })
+                            .catch(err => {
+                                result.failedEmails += 1;
+                                logger.error('Email error:', err);
+                            });
+                    }
                 }
             }
         }
@@ -81,5 +109,6 @@ export const checkAndCreateNotifications = async (userId?: string) => {
         skip += BATCH_SIZE;
     }
 
-    logger.info(`[Notification] Checked at ${now.toISOString()}${userId ? ` for user ${userId}` : ''}`);
+    logger.info(`[Notification] Checked at ${now.toISOString()}${userId ? ` for user ${userId}` : ''}`, result);
+    return result;
 };

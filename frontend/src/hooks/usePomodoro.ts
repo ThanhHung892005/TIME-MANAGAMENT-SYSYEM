@@ -11,10 +11,19 @@ export function usePomodoro(linkedTaskId?: string) {
   const [isRunning, setIsRunning] = useState(false);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isRunningRef = useRef(false);
+  isRunningRef.current = isRunning;
 
   const totalSeconds = phase === 'work'
     ? pomodoro.workMinutes * 60
     : pomodoro.breakMinutes * 60;
+
+  // Reset display when mode/minutes change, but NOT when pausing (isRunningRef avoids re-trigger on pause)
+  useEffect(() => {
+    if (!isRunningRef.current) {
+      setSecondsLeft(totalSeconds);
+    }
+  }, [totalSeconds]);
 
   const playBeep = useCallback(() => {
     const ctx = new AudioContext();
