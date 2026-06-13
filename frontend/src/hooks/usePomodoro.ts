@@ -4,8 +4,23 @@ import { useSettingsStore } from '@/store/settingsStore';
 
 type Phase = 'work' | 'break';
 
+const STORAGE_KEY = 'time-manager:pomodoro-state';
+
+type StoredPomodoroState = {
+  phase: Phase;
+  secondsLeft: number;
+  isRunning: boolean;
+  currentSessionId: string | null;
+  lastUpdatedAt: number;
+  settings: {
+    workMinutes: number;
+    breakMinutes: number;
+    mode: 'standard' | 'long' | 'custom';
+  };
+};
+
 export function usePomodoro(linkedTaskId?: string) {
-  const { pomodoro } = useSettingsStore();
+  const { pomodoro, setPomodoroSettings } = useSettingsStore();
   const [phase, setPhase] = useState<Phase>('work');
   const [secondsLeft, setSecondsLeft] = useState(pomodoro.workMinutes * 60);
   const [isRunning, setIsRunning] = useState(false);
@@ -13,17 +28,74 @@ export function usePomodoro(linkedTaskId?: string) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRunningRef = useRef(false);
   isRunningRef.current = isRunning;
+  const skipNextSettingsSyncRef = useRef(false);
 
   const totalSeconds = phase === 'work'
     ? pomodoro.workMinutes * 60
     : pomodoro.breakMinutes * 60;
 
-  // Reset display when mode/minutes change, but NOT when pausing (isRunningRef avoids re-trigger on pause)
+  // Reset display when mode/minutes change, but NOT when pausing or restoring from localStorage
   useEffect(() => {
+    if (skipNextSettingsSyncRef.current) {
+      skipNextSettingsSyncRef.current = false;
+      return;
+    }
     if (!isRunningRef.current) {
       setSecondsLeft(totalSeconds);
     }
   }, [totalSeconds]);
+
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+
+    try {
+      const saved = JSON.parse(raw) as StoredPomodoroState;
+      const elapsed = saved.isRunning
+        ? Math.floor((Date.now() - saved.lastUpdatedAt) / 1000)
+        : 0;
+      const remaining = Math.max(saved.secondsLeft - elapsed, 0);
+
+      skipNextSettingsSyncRef.current = true;
+      setPomodoroSettings(saved.settings);
+      setPhase(saved.phase);
+      setSecondsLeft(remaining);
+      setCurrentSessionId(saved.currentSessionId);
+
+      if (remaining > 0 && saved.isRunning) {
+        setIsRunning(true);
+      } else {
+        setIsRunning(false);
+        localStorage.removeItem(STORAGE_KEY);
+        if (saved.currentSessionId) {
+          pomodoroService.endSession(saved.currentSessionId).catch(() => null);
+        }
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [setPomodoroSettings]);
+
+  useEffect(() => {
+    if (!currentSessionId && !isRunning) {
+      localStorage.removeItem(STORAGE_KEY);
+      return;
+    }
+
+    const state: StoredPomodoroState = {
+      phase,
+      secondsLeft,
+      isRunning,
+      currentSessionId,
+      lastUpdatedAt: Date.now(),
+      settings: {
+        workMinutes: pomodoro.workMinutes,
+        breakMinutes: pomodoro.breakMinutes,
+        mode: pomodoro.mode,
+      },
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }, [phase, secondsLeft, isRunning, currentSessionId, pomodoro.workMinutes, pomodoro.breakMinutes, pomodoro.mode]);
 
   const playBeep = useCallback(() => {
     const ctx = new AudioContext();
@@ -47,6 +119,7 @@ export function usePomodoro(linkedTaskId?: string) {
       await pomodoroService.endSession(currentSessionId).catch(() => null);
       setCurrentSessionId(null);
     }
+    localStorage.removeItem(STORAGE_KEY);
 
     const nextPhase: Phase = phase === 'work' ? 'break' : 'work';
     setPhase(nextPhase);
@@ -61,6 +134,16 @@ export function usePomodoro(linkedTaskId?: string) {
       : 'Time Management';
   }, [secondsLeft, isRunning, phase]);
 
+  const runCountdown = useCallback(() => {
+    clearInterval(intervalRef.current!);
+    intervalRef.current = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) { handleTimerEnd(); return 0; }
+        return prev - 1;
+      });
+    }, 1000);
+  }, [handleTimerEnd]);
+
   const start = useCallback(async () => {
     const session = await pomodoroService.startSession({
       duration: totalSeconds,
@@ -70,14 +153,9 @@ export function usePomodoro(linkedTaskId?: string) {
 
     if (session) setCurrentSessionId(session.id);
 
-    intervalRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) { handleTimerEnd(); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
+    runCountdown();
     setIsRunning(true);
-  }, [phase, totalSeconds, linkedTaskId, handleTimerEnd]);
+  }, [phase, totalSeconds, linkedTaskId, runCountdown]);
 
   const pause = useCallback(() => {
     clearInterval(intervalRef.current!);
@@ -85,14 +163,9 @@ export function usePomodoro(linkedTaskId?: string) {
   }, []);
 
   const resume = useCallback(() => {
-    intervalRef.current = setInterval(() => {
-      setSecondsLeft((prev) => {
-        if (prev <= 1) { handleTimerEnd(); return 0; }
-        return prev - 1;
-      });
-    }, 1000);
+    runCountdown();
     setIsRunning(true);
-  }, [handleTimerEnd]);
+  }, [runCountdown]);
 
   const reset = useCallback(() => {
     clearInterval(intervalRef.current!);
@@ -102,6 +175,7 @@ export function usePomodoro(linkedTaskId?: string) {
       pomodoroService.endSession(currentSessionId).catch(() => null);
       setCurrentSessionId(null);
     }
+    localStorage.removeItem(STORAGE_KEY);
   }, [phase, pomodoro, currentSessionId]);
 
   const skipPhase = useCallback(() => {
@@ -111,10 +185,17 @@ export function usePomodoro(linkedTaskId?: string) {
       pomodoroService.endSession(currentSessionId).catch(() => null);
       setCurrentSessionId(null);
     }
+    localStorage.removeItem(STORAGE_KEY);
     const nextPhase: Phase = phase === 'work' ? 'break' : 'work';
     setPhase(nextPhase);
     setSecondsLeft(nextPhase === 'work' ? pomodoro.workMinutes * 60 : pomodoro.breakMinutes * 60);
   }, [phase, pomodoro, currentSessionId]);
+
+  useEffect(() => {
+    if (isRunning && !intervalRef.current) {
+      runCountdown();
+    }
+  }, [isRunning, runCountdown]);
 
   useEffect(() => () => clearInterval(intervalRef.current!), []);
 
