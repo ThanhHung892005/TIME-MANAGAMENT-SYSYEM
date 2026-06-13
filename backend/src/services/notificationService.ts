@@ -50,13 +50,12 @@ export const checkAndCreateNotifications = async (userId?: string) => {
                 const diffMs = due.getTime() - now.getTime();
                 const notifType = diffMs < 0 ? 'OVERDUE' : 'DEADLINE_SOON';
 
-                // Avoid spam: check if already sent in last 1 hour
+                // Avoid spam: send each warning type only once per task and user.
                 const existing = await prisma.notification.findFirst({
                     where: {
                         userId: user.id,
                         taskId: task.id,
                         type: notifType,
-                        createdAt: { gte: new Date(now.getTime() - 60 * 60 * 1000) },
                     },
                 });
                 if (existing) continue;
